@@ -5,7 +5,12 @@ blender:
     - "CPU"
     - "CUDA"
     - "OPTIX"
-    # - "HIP"
-    # - "METAL"
-    # - "ONEAPI"
+    # - "HIP"     # For AMD GPUs
+    # - "METAL"   # For Apple Silicon
+    # - "ONEAPI"  # For Intel GPUs
   threads: 0
+kafka:
+  brokers:
+    - "swarm-kafka.ru"
+  topic: "render-tasks"
+  group_id: "worker-service"

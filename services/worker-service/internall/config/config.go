@@ -10,12 +10,20 @@ import (
 type Config struct {
 	Env     string        `yaml:"env" env:"ENV" env-default:"local"`
 	Blender BlenderConfig `yaml:"blender"`
+	Kafka   KafkaConfig   `yaml:"kafka"`
+	// Future: Minio, etc.
 }
 
 type BlenderConfig struct {
 	Path           string   `yaml:"path" env:"BLENDER_PATH" env-required:"true"`
 	AllowedDevices []string `yaml:"allowed_devices" env:"ALLOWED_DEVICES" env-default:"CPU"`
 	Threads        int      `yaml:"threads" env:"RENDER_THREADS" env-default:"0"`
+}
+
+type KafkaConfig struct {
+	Brokers []string `yaml:"brokers" env:"KAFKA_BROKERS" env-default:"localhost:9092"`
+	Topic   string   `yaml:"topic" env:"KAFKA_TOPIC" env-default:"render-tasks"`
+	GroupID string   `yaml:"group_id" env:"KAFKA_GROUP_ID" env-default:"worker-service"`
 }
 
 // MustLoad loads the configuration. It panics if something goes wrong.

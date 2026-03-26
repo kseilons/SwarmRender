@@ -3,9 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"kseilons/worker-service/internall/config"
-	"kseilons/worker-service/internall/domain"
 	"kseilons/worker-service/internall/render"
+	"kseilons/worker-service/internall/transport/kafka"
 	"kseilons/worker-service/internall/usecase"
 	"kseilons/worker-service/pkg/logger"
 )
@@ -16,38 +20,35 @@ func main() {
 	log := logger.SetupLogger(cfg.Env)
 	log.Info("starting application", "env", cfg.Env)
 
-	ctx := context.Background()
+	// Context for graceful shutdown
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
 	engine := render.NewEngine(cfg.Blender.Path)
 
 	renderUseCase := usecase.NewRenderUseCase(engine, cfg.Blender.AllowedDevices)
 
-	task := domain.RenderTask{
-		BlendPath: "C:\\doc\\Диплом\\blender-project\\basketball.blend",
-		Options: domain.RenderOptions{
-			Engine:       domain.EngineCycles,
-			UseCPU:       true,
-			CyclesDevice: domain.DeviceCUDA,
-			Threads:      cfg.Blender.Threads, // Use threads from nested config
-			Format:       domain.FormatPNG,
-			Scene:        "",
-			Background:   true,
-		},
-		StartFrame: 1,
-		EndFrame:   10,
-		OutputPath: "C:\\doc\\Диплом\\blender-project\\output\\",
-	}
+	// Initialize Transport (Kafka Consumer)
+	consumer := kafka.NewConsumer(cfg.Kafka, renderUseCase, log)
+	defer func() {
+		if err := consumer.Close(); err != nil {
+			log.Error("failed to close kafka consumer", logger.Err(err))
+		}
+	}()
 
-	taskLog := log.With(task.LogAttrs()...)
+	// Start consumer in a goroutine
+	go func() {
+		if err := consumer.Run(ctx); err != nil {
+			log.Error("kafka consumer failed", logger.Err(err))
+			os.Exit(1)
+		}
+	}()
 
-	taskLog.Info("starting task execution via usecase")
+	log.Info("worker service is running and waiting for tasks from kafka...")
 
-	output, err := renderUseCase.Execute(ctx, taskLog, task)
-	if err != nil {
-		taskLog.Error("application error", logger.Err(err))
-		return
-	}
+	// Wait for termination signal
+	<-ctx.Done()
+	log.Info("shutting down application gracefully")
 
-	taskLog.Info("task completed")
-	fmt.Println(string(output))
+	fmt.Println("application stopped")
 }
