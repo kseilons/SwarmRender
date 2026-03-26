@@ -19,17 +19,18 @@ func NewEngine(executablePath string) *Engine {
 }
 
 func (e *Engine) Render(ctx context.Context, logger *slog.Logger, task domain.RenderTask) ([]byte, error) {
+	if task.BlendPath == "" {
+		err := fmt.Errorf("blend file path is required")
+		logger.Error("validation failed", slog.Any("error", err))
+		return nil, err
+	}
+
 	args := []string{}
 
 	if task.Options.Background {
 		args = append(args, "-b")
 	}
 
-	if task.BlendPath == "" {
-		err := fmt.Errorf("blend file path is required")
-		logger.Error("validation failed", slog.Any("error", err))
-		return nil, err
-	}
 	args = append(args, task.BlendPath)
 
 	if task.Options.Engine != "" {

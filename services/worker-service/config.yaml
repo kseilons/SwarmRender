@@ -1,0 +1,11 @@
+env: "local"
+blender:
+  path: "blender"
+  allowed_devices:
+    - "CPU"
+    - "CUDA"
+    - "OPTIX"
+    # - "HIP"
+    # - "METAL"
+    # - "ONEAPI"
+  threads: 0
