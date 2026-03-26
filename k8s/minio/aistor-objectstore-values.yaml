@@ -1,0 +1,32 @@
+objectStore:
+  name: object-store # name of the AIStor Server
+  pools:
+    - name: pool-0
+      servers: 1 # Number of servers/pods to deploy
+      volumesPerServer: 2 # Number of Persistent Volumes per Server/Pod
+      size: 25Gi # Size of each PV
+  #    storageClassName: directpv-min-io # Storage Class assigned to each PV
+  services:
+    minio:
+      serviceType: ClusterIP
+    console:
+      serviceType: ClusterIP
+  ingress:
+    api:
+      enabled: true
+      ingressClassName: nginx
+      annotations:
+        nginx.ingress.kubernetes.io/proxy-body-size: "0" # Важно для загрузки больших файлов
+      hosts:
+        - host: s3.swarmrender.ru
+          paths:
+            - path: /storage
+              pathType: Prefix
+    console:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - host: console.swarmrender.ru
+          paths:
+            - path: /storage-console
+              pathType: Prefix
