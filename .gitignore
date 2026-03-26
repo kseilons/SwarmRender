@@ -1,0 +1,33 @@
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Secrets
+*.pem
+*.key
+*secrets*.yaml
+!*secret*.yaml.example
+
+# Build artifacts
+*.jar
+*.war
+*.ear
+target/
+build/
+dist/
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env
+.env.local
+*.toml
+
+# OS
+.DS_Store
+Thumbs.db
