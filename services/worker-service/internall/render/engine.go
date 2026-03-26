@@ -3,6 +3,7 @@ package render
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os/exec"
 	"strconv"
 
@@ -17,7 +18,7 @@ func NewEngine(executablePath string) *Engine {
 	return &Engine{executablePath: executablePath}
 }
 
-func (e *Engine) Render(ctx context.Context, task domain.RenderTask) ([]byte, error) {
+func (e *Engine) Render(ctx context.Context, logger *slog.Logger, task domain.RenderTask) ([]byte, error) {
 	args := []string{}
 
 	if task.Options.Background {
@@ -25,7 +26,9 @@ func (e *Engine) Render(ctx context.Context, task domain.RenderTask) ([]byte, er
 	}
 
 	if task.BlendPath == "" {
-		return nil, fmt.Errorf("blend file path is required")
+		err := fmt.Errorf("blend file path is required")
+		logger.Error("validation failed", slog.Any("error", err))
+		return nil, err
 	}
 	args = append(args, task.BlendPath)
 
@@ -67,7 +70,25 @@ func (e *Engine) Render(ctx context.Context, task domain.RenderTask) ([]byte, er
 		}
 	}
 
+	logger.Debug("executing blender command",
+		slog.String("path", e.executablePath),
+		slog.Any("args", args),
+	)
+
 	cmd := exec.CommandContext(ctx, e.executablePath, args...)
 
-	return cmd.CombinedOutput()
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		logger.Error("render failed",
+			slog.Any("error", err),
+			slog.String("output", string(output)),
+		)
+		return output, err
+	}
+
+	logger.Info("render completed successfully",
+		slog.Int("output_size", len(output)),
+	)
+
+	return output, nil
 }

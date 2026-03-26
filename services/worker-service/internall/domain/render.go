@@ -1,5 +1,7 @@
 package domain
 
+import "log/slog"
+
 // EngineType defines the available render engines in Blender.
 type EngineType string
 
@@ -53,4 +55,15 @@ type RenderTask struct {
 	EndFrame   int
 	OutputPath string
 	Options    RenderOptions
+}
+
+// LogAttrs returns a slice of slog attributes for the task.
+func (t RenderTask) LogAttrs() []any {
+	return []any{
+		slog.String("blend_path", t.BlendPath),
+		slog.Int("start_frame", t.StartFrame),
+		slog.Int("end_frame", t.EndFrame),
+		slog.String("output_path", t.OutputPath),
+		slog.String("engine", string(t.Options.Engine)),
+	}
 }
