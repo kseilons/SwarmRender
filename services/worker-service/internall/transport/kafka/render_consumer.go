@@ -15,8 +15,14 @@ type RenderUseCase interface {
 	Execute(ctx context.Context, logger *slog.Logger, task domain.RenderTask) ([]byte, error)
 }
 
+type Reader interface {
+	FetchMessage(ctx context.Context) (kafka.Message, error)
+	CommitMessages(ctx context.Context, msgs ...kafka.Message) error
+	Close() error
+}
+
 type Consumer struct {
-	reader  *kafka.Reader
+	reader  Reader
 	useCase RenderUseCase
 	logger  *slog.Logger
 }

@@ -86,3 +86,33 @@ func TestLoad_MissingRequired(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, cfg)
 }
+
+func TestLoad_EnvPath(t *testing.T) {
+	tmpFile, err := os.CreateTemp("", "env-config-*.yaml")
+	assert.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	_, _ = tmpFile.WriteString("env: \"env-path\"\nblender:\n  path: \"blender\"\nminio:\n  access_key: \"ak\"\n  secret_key: \"sk\"")
+	tmpFile.Close()
+
+	oldPath := os.Getenv("CONFIG_PATH")
+	os.Setenv("CONFIG_PATH", tmpFile.Name())
+	defer os.Setenv("CONFIG_PATH", oldPath)
+
+	cfg, err := Load("")
+	assert.NoError(t, err)
+	assert.Equal(t, "env-path", cfg.Env)
+}
+
+func TestLoad_MalformedYAML(t *testing.T) {
+	tmpFile, err := os.CreateTemp("", "bad-config-*.yaml")
+	assert.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	_, _ = tmpFile.WriteString("env: : : bad : yaml")
+	tmpFile.Close()
+
+	cfg, err := Load(tmpFile.Name())
+	assert.Error(t, err)
+	assert.Nil(t, cfg)
+}

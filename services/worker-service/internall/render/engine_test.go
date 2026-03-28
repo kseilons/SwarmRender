@@ -1,6 +1,9 @@
 package render
 
 import (
+	"context"
+	"log/slog"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -88,4 +91,32 @@ func TestEngine_BuildArgs(t *testing.T) {
 			assert.Equal(t, tt.expected, args)
 		})
 	}
+}
+
+func TestEngine_Render_ValidationFailure(t *testing.T) {
+	e := NewEngine("blender")
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+	job := domain.RenderJob{
+		BlendPath: "", // trigger error
+	}
+
+	output, err := e.Render(context.Background(), logger, job)
+	assert.Error(t, err)
+	assert.Nil(t, output)
+	assert.Contains(t, err.Error(), "blend file path is required")
+}
+
+func TestEngine_Render_ExecutionFailure(t *testing.T) {
+	// Use a non-existent mobile blender executable to trigger failure
+	e := NewEngine("/path/to/non-existent/blender")
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+	job := domain.RenderJob{
+		BlendPath: "/tmp/test.blend",
+	}
+
+	_, err := e.Render(context.Background(), logger, job)
+	assert.Error(t, err)
+	// If executable is not found, output is usually nil in this case
 }

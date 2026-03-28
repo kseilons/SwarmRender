@@ -12,8 +12,14 @@ import (
 	"kseilons/worker-service/internall/config"
 )
 
+type Client interface {
+	ListObjects(ctx context.Context, bucketName string, opts minio.ListObjectsOptions) <-chan minio.ObjectInfo
+	FGetObject(ctx context.Context, bucketName, objectName, filePath string, opts minio.GetObjectOptions) error
+	FPutObject(ctx context.Context, bucketName, objectName, filePath string, opts minio.PutObjectOptions) (minio.UploadInfo, error)
+}
+
 type MinioRepository struct {
-	client *minio.Client
+	client Client
 	bucket string
 }
 
