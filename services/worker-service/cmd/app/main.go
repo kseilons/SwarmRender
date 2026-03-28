@@ -26,7 +26,7 @@ func main() {
 
 	engine := render.NewEngine(cfg.Blender.Path)
 
-	renderUseCase := usecase.NewRenderUseCase(engine, cfg.Blender.AllowedDevices)
+	renderUseCase := usecase.NewRenderUseCase(engine, cfg.Blender.AllowedDevices, cfg.Blender.Threads)
 
 	// Initialize Transport (Kafka Consumer)
 	consumer := kafka.NewConsumer(cfg.Kafka, renderUseCase, log)

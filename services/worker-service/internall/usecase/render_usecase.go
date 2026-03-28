@@ -9,18 +9,20 @@ import (
 )
 
 type Renderer interface {
-	Render(ctx context.Context, logger *slog.Logger, task domain.RenderTask) ([]byte, error)
+	Render(ctx context.Context, logger *slog.Logger, job domain.RenderJob) ([]byte, error)
 }
 
 type RenderUseCase struct {
 	renderer       Renderer
 	allowedDevices []string
+	defaultThreads int
 }
 
-func NewRenderUseCase(renderer Renderer, allowedDevices []string) *RenderUseCase {
+func NewRenderUseCase(renderer Renderer, allowedDevices []string, defaultThreads int) *RenderUseCase {
 	return &RenderUseCase{
 		renderer:       renderer,
 		allowedDevices: allowedDevices,
+		defaultThreads: defaultThreads,
 	}
 }
 
@@ -35,9 +37,27 @@ func (uc *RenderUseCase) Execute(ctx context.Context, logger *slog.Logger, task 
 		}
 	}
 
+	// TODO: Download project from MinIO based on task.ProjectID
+	// For now, we'll assume a local path mapping or mock it.
+	blendPath := fmt.Sprintf("/tmp/renders/%s/%s", task.ProjectID, task.BlendFile)
+	outputPath := fmt.Sprintf("/tmp/renders/%s/output/", task.ProjectID)
+
+	job := domain.RenderJob{
+		CommonTask: task.CommonTask,
+		BlendPath:  blendPath,
+		OutputPath: outputPath,
+	}
+
+	// Apply hardware settings from config
+	if job.Options.Threads == 0 {
+		job.Options.Threads = uc.defaultThreads
+	}
+
 	// Call Infrastructure Layer
-	logger.Info("policy validation passed, calling renderer")
-	return uc.renderer.Render(ctx, logger, task)
+	logger.Info("policy validation passed, calling renderer",
+		slog.String("blend_path", job.BlendPath),
+	)
+	return uc.renderer.Render(ctx, logger, job)
 }
 
 func (uc *RenderUseCase) isDeviceAllowed(device string) bool {

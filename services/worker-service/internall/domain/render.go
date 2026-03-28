@@ -39,31 +39,53 @@ const (
 
 // RenderOptions contains configuration for a render task.
 type RenderOptions struct {
-	Engine       EngineType
-	UseCPU       bool
-	CyclesDevice CyclesDevice
-	Threads      int // 0 to use all system processors
-	Format       FileFormat
-	Scene        string // Optional: specific scene to render
-	Background   bool   // Usually true for worker services
+	Engine       EngineType   `json:"engine"`
+	UseCPU       bool         `json:"use_cpu"`
+	CyclesDevice CyclesDevice `json:"cycles_device"`
+	Threads      int          `json:"threads"` // 0 to use all system processors
+	Format       FileFormat   `json:"format"`
+	Scene        string       `json:"scene"`      // Optional: specific scene to render
+	Background   bool         `json:"background"` // Usually true for worker services
 }
 
-// RenderTask groups all parameters for a single render job.
+type CommonTask struct {
+	StartFrame int           `json:"start_frame"`
+	EndFrame   int           `json:"end_frame"`
+	Options    RenderOptions `json:"options"`
+}
+
+// RenderTask groups all parameters for a single render job coming from Kafka.
 type RenderTask struct {
-	BlendPath  string
-	StartFrame int
-	EndFrame   int
-	OutputPath string
-	Options    RenderOptions
+	CommonTask `json:",inline"`
+	ProjectID  string `json:"project_id"`
+	BlendFile  string `json:"blend_file"`
 }
 
-// LogAttrs returns a slice of slog attributes for the task.
+// RenderJob contains all parameters needed by the rendering engine.
+type RenderJob struct {
+	CommonTask
+	BlendPath  string
+	OutputPath string
+}
+
+// LogAttrs returns a slice of slog attributes for the Kafka task.
 func (t RenderTask) LogAttrs() []any {
 	return []any{
-		slog.String("blend_path", t.BlendPath),
+		slog.String("project_id", t.ProjectID),
+		slog.String("blend_file", t.BlendFile),
 		slog.Int("start_frame", t.StartFrame),
 		slog.Int("end_frame", t.EndFrame),
-		slog.String("output_path", t.OutputPath),
 		slog.String("engine", string(t.Options.Engine)),
+	}
+}
+
+// LogAttrs returns a slice of slog attributes for the internal job.
+func (j RenderJob) LogAttrs() []any {
+	return []any{
+		slog.String("blend_path", j.BlendPath),
+		slog.String("output_path", j.OutputPath),
+		slog.Int("start_frame", j.StartFrame),
+		slog.Int("end_frame", j.EndFrame),
+		slog.String("engine", string(j.Options.Engine)),
 	}
 }
