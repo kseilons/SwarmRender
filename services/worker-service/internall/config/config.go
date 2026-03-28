@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -34,23 +35,35 @@ type MinioConfig struct {
 	Bucket    string `yaml:"bucket" env:"MINIO_BUCKET" env-default:"blender-renders"`
 }
 
-// MustLoad loads the configuration. It panics if something goes wrong.\
-func MustLoad() *Config {
-	configPath := os.Getenv("CONFIG_PATH")
+// Load loads the configuration from a file and environment variables.
+func Load(configPath string) (*Config, error) {
 	if configPath == "" {
-		configPath = "config.yaml"
+		configPath = os.Getenv("CONFIG_PATH")
+		if configPath == "" {
+			configPath = "config.yaml"
+		}
 	}
 
 	// Check if file exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		log.Fatalf("config file does not exist: %s", configPath)
+		return nil, fmt.Errorf("config file does not exist: %s", configPath)
 	}
 
 	var cfg Config
 
 	if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
-		log.Fatalf("cannot read config: %s", err)
+		return nil, fmt.Errorf("cannot read config: %w", err)
 	}
 
-	return &cfg
+	return &cfg, nil
+}
+
+// MustLoad loads the configuration. It panics if something goes wrong.
+func MustLoad() *Config {
+	cfg, err := Load("")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return cfg
 }
