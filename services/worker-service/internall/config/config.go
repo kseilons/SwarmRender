@@ -40,7 +40,7 @@ func Load(configPath string) (*Config, error) {
 	if configPath == "" {
 		configPath = os.Getenv("CONFIG_PATH")
 		if configPath == "" {
-			configPath = "config.yaml"
+			configPath = "config/config.yaml"
 		}
 	}
 
