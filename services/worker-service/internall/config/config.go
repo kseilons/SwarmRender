@@ -11,7 +11,7 @@ type Config struct {
 	Env     string        `yaml:"env" env:"ENV" env-default:"local"`
 	Blender BlenderConfig `yaml:"blender"`
 	Kafka   KafkaConfig   `yaml:"kafka"`
-	// Future: Minio, etc.
+	Minio   MinioConfig   `yaml:"minio"`
 }
 
 type BlenderConfig struct {
@@ -26,8 +26,15 @@ type KafkaConfig struct {
 	GroupID string   `yaml:"group_id" env:"KAFKA_GROUP_ID" env-default:"worker-service"`
 }
 
-// MustLoad loads the configuration. It panics if something goes wrong.
-// Usage: cfg := config.MustLoad()
+type MinioConfig struct {
+	Endpoint  string `yaml:"endpoint" env:"MINIO_ENDPOINT" env-default:"localhost:9000"`
+	AccessKey string `yaml:"access_key" env:"MINIO_ACCESS_KEY" env-required:"true"`
+	SecretKey string `yaml:"secret_key" env:"MINIO_SECRET_KEY" env-required:"true"`
+	UseSSL    bool   `yaml:"use_ssl" env:"MINIO_USE_SSL" env-default:"false"`
+	Bucket    string `yaml:"bucket" env:"MINIO_BUCKET" env-default:"blender-renders"`
+}
+
+// MustLoad loads the configuration. It panics if something goes wrong.\
 func MustLoad() *Config {
 	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {
