@@ -19,10 +19,11 @@ func TestRenderUseCase_Execute_Success(t *testing.T) {
 	// Setup
 	mockRenderer := mocks.NewRenderer(t)
 	mockRepo := mocks.NewProjectRepository(t)
+	mockProducer := mocks.NewResultProducer(t)
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	allowedDevices := []string{"CUDA", "OPTIX"}
-	uc := usecase.NewRenderUseCase(mockRenderer, mockRepo, allowedDevices, 4)
+	uc := usecase.NewRenderUseCase(mockRenderer, mockRepo, mockProducer, allowedDevices, 4)
 
 	task := domain.RenderTask{
 		CommonTask: domain.CommonTask{
@@ -35,6 +36,7 @@ func TestRenderUseCase_Execute_Success(t *testing.T) {
 		},
 		ProjectID: "test-proj",
 		BlendFile: "scene.blend",
+		TaskID:    "task-123",
 	}
 
 	ctx := context.Background()
@@ -45,6 +47,9 @@ func TestRenderUseCase_Execute_Success(t *testing.T) {
 		return job.Options.Threads == 4
 	})).Return([]byte("rendered-data"), nil)
 	mockRepo.On("UploadResult", ctx, "test-proj", mock.AnythingOfType("string")).Return(nil)
+	mockProducer.On("ReportResult", ctx, mock.MatchedBy(func(res domain.RenderResult) bool {
+		return res.TaskID == "task-123" && res.Status == domain.StatusCompleted
+	})).Return(nil)
 
 	// Execute
 	output, err := uc.Execute(ctx, logger, task)
@@ -54,14 +59,72 @@ func TestRenderUseCase_Execute_Success(t *testing.T) {
 	assert.Equal(t, []byte("rendered-data"), output)
 }
 
+func TestRenderUseCase_Execute_RenderFailure(t *testing.T) {
+	// Setup
+	mockRenderer := mocks.NewRenderer(t)
+	mockRepo := mocks.NewProjectRepository(t)
+	mockProducer := mocks.NewResultProducer(t)
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+	uc := usecase.NewRenderUseCase(mockRenderer, mockRepo, mockProducer, nil, 0)
+	task := domain.RenderTask{ProjectID: "test-proj", TaskID: "task-failed"}
+	ctx := context.Background()
+
+	// Expectations
+	mockRepo.On("DownloadProject", ctx, "test-proj", mock.Anything).Return(nil)
+	mockRenderer.On("Render", ctx, logger, mock.Anything).Return(nil, errors.New("blender crash"))
+	mockProducer.On("ReportResult", ctx, mock.MatchedBy(func(res domain.RenderResult) bool {
+		return res.TaskID == "task-failed" && res.Status == domain.StatusFailed && res.Error == "blender crash"
+	})).Return(nil)
+
+	// Execute
+	output, err := uc.Execute(ctx, logger, task)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Nil(t, output)
+}
+
+func TestRenderUseCase_Execute_ResultReportFailure(t *testing.T) {
+	// Setup
+	mockRenderer := mocks.NewRenderer(t)
+	mockRepo := mocks.NewProjectRepository(t)
+	mockProducer := mocks.NewResultProducer(t)
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+	uc := usecase.NewRenderUseCase(mockRenderer, mockRepo, mockProducer, nil, 0)
+
+	task := domain.RenderTask{
+		ProjectID: "test-proj",
+		TaskID:    "task-fail-report",
+	}
+
+	ctx := context.Background()
+
+	// Expectations
+	mockRepo.On("DownloadProject", ctx, "test-proj", mock.AnythingOfType("string")).Return(nil)
+	mockRenderer.On("Render", ctx, logger, mock.Anything).Return([]byte("ok"), nil)
+	mockRepo.On("UploadResult", ctx, "test-proj", mock.AnythingOfType("string")).Return(nil)
+	mockProducer.On("ReportResult", ctx, mock.Anything).Return(errors.New("kafka down"))
+
+	// Execute
+	output, err := uc.Execute(ctx, logger, task)
+
+	// Assert
+	// Execute should still succeed even if reporting fails (it just logs the error)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("ok"), output)
+}
+
 func TestRenderUseCase_Execute_ValidationFailure(t *testing.T) {
 	// Setup
 	mockRenderer := mocks.NewRenderer(t)
 	mockRepo := mocks.NewProjectRepository(t)
+	mockProducer := mocks.NewResultProducer(t)
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	allowedDevices := []string{"CPU"}
-	uc := usecase.NewRenderUseCase(mockRenderer, mockRepo, allowedDevices, 0)
+	uc := usecase.NewRenderUseCase(mockRenderer, mockRepo, mockProducer, allowedDevices, 0)
 
 	task := domain.RenderTask{
 		CommonTask: domain.CommonTask{
@@ -89,12 +152,14 @@ func TestRenderUseCase_Execute_DownloadFailure(t *testing.T) {
 	// Setup
 	mockRenderer := mocks.NewRenderer(t)
 	mockRepo := mocks.NewProjectRepository(t)
+	mockProducer := mocks.NewResultProducer(t)
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	uc := usecase.NewRenderUseCase(mockRenderer, mockRepo, nil, 0)
+	uc := usecase.NewRenderUseCase(mockRenderer, mockRepo, mockProducer, nil, 0)
 
 	task := domain.RenderTask{
 		ProjectID: "test-proj",
+		TaskID:    "task-123",
 	}
 
 	ctx := context.Background()

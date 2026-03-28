@@ -37,6 +37,14 @@ const (
 	FormatFFMPEG  FileFormat = "FFMPEG"
 )
 
+type Status string
+
+const (
+	StatusPending   Status = "PENDING"
+	StatusCompleted Status = "COMPLETED"
+	StatusFailed    Status = "FAILED"
+)
+
 // RenderOptions contains configuration for a render task.
 type RenderOptions struct {
 	Engine       EngineType   `json:"engine"`
@@ -59,7 +67,17 @@ type RenderTask struct {
 	CommonTask `json:",inline"`
 	ProjectID  string `json:"project_id"`
 	BlendFile  string `json:"blend_file"`
+	TaskID     string `json:"task_id"`
 }
+
+// RenderResult is the message workers send back when a task is finished.
+type RenderResult struct {
+	TaskID   string `json:"task_id"`
+	Status   Status `json:"status"`
+	WorkerID string `json:"worker_id"`
+	Error    string `json:"error,omitempty"`
+}
+
 
 // RenderJob contains all parameters needed by the rendering engine.
 type RenderJob struct {

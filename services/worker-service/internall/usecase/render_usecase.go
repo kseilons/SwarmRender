@@ -19,17 +19,23 @@ type Renderer interface {
 	Render(ctx context.Context, logger *slog.Logger, job domain.RenderJob) ([]byte, error)
 }
 
+type ResultProducer interface {
+	ReportResult(ctx context.Context, result domain.RenderResult) error
+}
+
 type RenderUseCase struct {
 	renderer       Renderer
 	projectRepo    ProjectRepository
+	resultProducer ResultProducer
 	allowedDevices []string
 	defaultThreads int
 }
 
-func NewRenderUseCase(renderer Renderer, projectRepo ProjectRepository, allowedDevices []string, defaultThreads int) *RenderUseCase {
+func NewRenderUseCase(renderer Renderer, projectRepo ProjectRepository, resultProducer ResultProducer, allowedDevices []string, defaultThreads int) *RenderUseCase {
 	return &RenderUseCase{
 		renderer:       renderer,
 		projectRepo:    projectRepo,
+		resultProducer: resultProducer,
 		allowedDevices: allowedDevices,
 		defaultThreads: defaultThreads,
 	}
@@ -67,15 +73,39 @@ func (uc *RenderUseCase) Execute(ctx context.Context, logger *slog.Logger, task 
 
 	renderOutput, err := uc.renderer.Render(ctx, logger, job)
 	if err != nil {
+		uc.reportError(ctx, logger, task.TaskID, err)
 		return renderOutput, err
 	}
 
 	if err := uc.uploadResults(ctx, logger, task.ProjectID, outputDir); err != nil {
+		uc.reportError(ctx, logger, task.TaskID, err)
 		return renderOutput, err
+	}
+
+	err = uc.resultProducer.ReportResult(ctx, domain.RenderResult{
+		TaskID:   task.TaskID,
+		Status:   domain.StatusCompleted,
+		WorkerID: os.Getenv("HOSTNAME"),
+	})
+	if err != nil {
+		logger.Error("failed to report result", slog.Any("error", err))
 	}
 
 	return renderOutput, nil
 }
+
+func (uc *RenderUseCase) reportError(ctx context.Context, logger *slog.Logger, taskID string, err error) {
+	reportErr := uc.resultProducer.ReportResult(ctx, domain.RenderResult{
+		TaskID:   taskID,
+		Status:   domain.StatusFailed,
+		WorkerID: os.Getenv("HOSTNAME"),
+		Error:    err.Error(),
+	})
+	if reportErr != nil {
+		logger.Error("failed to report failure result", slog.Any("error", reportErr))
+	}
+}
+
 
 func (uc *RenderUseCase) validate(task domain.RenderTask) error {
 	if task.Options.Engine == domain.EngineCycles {

@@ -22,9 +22,10 @@ type BlenderConfig struct {
 }
 
 type KafkaConfig struct {
-	Brokers []string `yaml:"brokers" env:"KAFKA_BROKERS" env-default:"localhost:9092"`
-	Topic   string   `yaml:"topic" env:"KAFKA_TOPIC" env-default:"render-tasks"`
-	GroupID string   `yaml:"group_id" env:"KAFKA_GROUP_ID" env-default:"worker-service"`
+	Brokers     []string `yaml:"brokers" env:"KAFKA_BROKERS" env-default:"localhost:9092"`
+	Topic       string   `yaml:"topic" env:"KAFKA_TOPIC" env-default:"render-tasks"`
+	ResultTopic string   `yaml:"result_topic" env:"KAFKA_RESULT_TOPIC" env-default:"render-results"`
+	GroupID     string   `yaml:"group_id" env:"KAFKA_GROUP_ID" env-default:"worker-service"`
 }
 
 type MinioConfig struct {
