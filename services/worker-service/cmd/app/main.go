@@ -9,6 +9,7 @@ import (
 
 	"kseilons/worker-service/internall/config"
 	"kseilons/worker-service/internall/render"
+	"kseilons/worker-service/internall/repository"
 	"kseilons/worker-service/internall/transport/kafka"
 	"kseilons/worker-service/internall/usecase"
 	"kseilons/worker-service/pkg/logger"
@@ -26,7 +27,13 @@ func main() {
 
 	engine := render.NewEngine(cfg.Blender.Path)
 
-	renderUseCase := usecase.NewRenderUseCase(engine, cfg.Blender.AllowedDevices, cfg.Blender.Threads)
+	minioRepo, err := repository.NewMinioRepository(cfg.Minio)
+	if err != nil {
+		log.Error("failed to initialize minio repository", logger.Err(err))
+		os.Exit(1)
+	}
+
+	renderUseCase := usecase.NewRenderUseCase(engine, minioRepo, cfg.Blender.AllowedDevices, cfg.Blender.Threads)
 
 	// Initialize Transport (Kafka Consumer)
 	consumer := kafka.NewConsumer(cfg.Kafka, renderUseCase, log)
