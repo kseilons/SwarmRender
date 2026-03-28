@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"log/slog"
 
+	"time"
+
 	"kseilons/worker-service/internall/config"
 	"kseilons/worker-service/internall/domain"
 
@@ -30,11 +32,13 @@ type Consumer struct {
 func NewConsumer(cfg config.KafkaConfig, useCase RenderUseCase, logger *slog.Logger) *Consumer {
 	return &Consumer{
 		reader: kafka.NewReader(kafka.ReaderConfig{
-			Brokers:  cfg.Brokers,
-			Topic:    cfg.Topic,
-			GroupID:  cfg.GroupID,
-			MinBytes: 10e3, // 10KB
-			MaxBytes: 10e6, // 10MB
+			Brokers:     cfg.Brokers,
+			Topic:       cfg.Topic,
+			GroupID:     cfg.GroupID,
+			MinBytes:    1,
+			MaxBytes:    10e6, // 10MB
+			MaxWait:     1 * time.Second,
+			StartOffset: kafka.FirstOffset,
 		}),
 		useCase: useCase,
 		logger:  logger,
