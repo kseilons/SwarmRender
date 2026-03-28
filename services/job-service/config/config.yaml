@@ -1,0 +1,15 @@
+env: "local"
+http:
+  address: "0.0.0.0:8081"
+database:
+  host: "localhost"
+  port: 5431
+  user: "admin"
+  password: "admin"
+  name: "dev_db"
+  sslmode: "disable"
+kafka:
+  brokers: ["localhost:9092"]
+  task_topic: "render-tasks"
+  result_topic: "render-results"
+  result_group_id: "job-service-results"
