@@ -100,6 +100,9 @@ func (uc *RenderUseCase) prepareJob(task domain.RenderTask, blendPath, outputDir
 		outputPrefix = fmt.Sprintf("%s_", task.Options.Scene)
 	}
 	outputPath := filepath.Join(outputDir, outputPrefix)
+	if outputPrefix == "" {
+		outputPath += string(os.PathSeparator)
+	}
 
 	job := domain.RenderJob{
 		CommonTask: task.CommonTask,
@@ -115,6 +118,14 @@ func (uc *RenderUseCase) prepareJob(task domain.RenderTask, blendPath, outputDir
 
 func (uc *RenderUseCase) uploadResults(ctx context.Context, logger *slog.Logger, projectID, outputDir string) error {
 	logger.Info("uploading render results", slog.String("project_id", projectID))
+
+	files, err := os.ReadDir(outputDir)
+	if err != nil {
+		logger.Warn("failed to read output directory", slog.String("dir", outputDir), slog.Any("error", err))
+	} else {
+		logger.Info("found files in output directory", slog.Int("count", len(files)), slog.String("dir", outputDir))
+	}
+
 	if err := uc.projectRepo.UploadResult(ctx, projectID, outputDir); err != nil {
 		return fmt.Errorf("failed to upload results: %w", err)
 	}
