@@ -25,51 +25,7 @@ func (e *Engine) Render(ctx context.Context, logger *slog.Logger, job domain.Ren
 		return nil, err
 	}
 
-	args := []string{}
-
-	if job.Options.Background {
-		args = append(args, "-b")
-	}
-
-	args = append(args, job.BlendPath)
-
-	if job.Options.Engine != "" {
-		args = append(args, "-E", string(job.Options.Engine))
-	}
-
-	if job.Options.Threads >= 0 {
-		args = append(args, "-t", strconv.Itoa(job.Options.Threads))
-	}
-
-	if job.OutputPath != "" {
-		args = append(args, "-o", job.OutputPath)
-	}
-
-	if job.Options.Format != "" {
-		args = append(args, "-F", string(job.Options.Format))
-	}
-
-	if job.Options.Scene != "" {
-		args = append(args, "-S", job.Options.Scene)
-	}
-
-	if job.StartFrame == job.EndFrame {
-		args = append(args, "-f", strconv.Itoa(job.StartFrame))
-	} else {
-		args = append(args, "-s", strconv.Itoa(job.StartFrame), "-e", strconv.Itoa(job.EndFrame), "-a")
-	}
-
-	if job.Options.Engine == domain.EngineCycles {
-		args = append(args, "--")
-		if job.Options.CyclesDevice != "" {
-			device := string(job.Options.CyclesDevice)
-			if job.Options.UseCPU && device != string(domain.DeviceCPU) {
-				// Append +CPU to a GPU device to render on both CPU and GPU.
-				device += "+CPU"
-			}
-			args = append(args, "--cycles-device", device)
-		}
-	}
+	args := e.BuildArgs(job)
 
 	logger.Debug("executing blender command",
 		slog.String("path", e.executablePath),
@@ -92,4 +48,57 @@ func (e *Engine) Render(ctx context.Context, logger *slog.Logger, job domain.Ren
 	)
 
 	return output, nil
+}
+
+func (e *Engine) BuildArgs(job domain.RenderJob) []string {
+	args := []string{}
+
+	if job.Options.Background {
+		args = append(args, "-b")
+	}
+
+	if job.BlendPath != "" {
+		args = append(args, job.BlendPath)
+	}
+
+	if job.Options.Engine != "" {
+		args = append(args, "-E", string(job.Options.Engine))
+	}
+
+	if job.Options.Threads > 0 {
+		args = append(args, "-t", strconv.Itoa(job.Options.Threads))
+	}
+
+	if job.OutputPath != "" {
+		args = append(args, "-o", job.OutputPath)
+	}
+
+	if job.Options.Format != "" {
+		args = append(args, "-F", string(job.Options.Format))
+	}
+
+	if job.Options.Scene != "" {
+		args = append(args, "-S", job.Options.Scene)
+	}
+
+	if job.StartFrame == job.EndFrame {
+		if job.StartFrame > 0 {
+			args = append(args, "-f", strconv.Itoa(job.StartFrame))
+		}
+	} else {
+		args = append(args, "-s", strconv.Itoa(job.StartFrame), "-e", strconv.Itoa(job.EndFrame), "-a")
+	}
+
+	if job.Options.Engine == domain.EngineCycles {
+		args = append(args, "--")
+		if job.Options.CyclesDevice != "" {
+			device := string(job.Options.CyclesDevice)
+			if job.Options.UseCPU && device != string(domain.DeviceCPU) {
+				device += "+CPU"
+			}
+			args = append(args, "--cycles-device", device)
+		}
+	}
+
+	return args
 }
