@@ -39,12 +39,12 @@ func (c *Consumer) Run(ctx context.Context) error {
 	c.logger.Info("starting kafka consumer")
 
 	for {
-		msg, err := c.reader.ReadMessage(ctx)
+		msg, err := c.reader.FetchMessage(ctx)
 		if err != nil {
 			if ctx.Err() != nil {
 				return nil
 			}
-			c.logger.Error("failed to read message from kafka", slog.Any("error", err))
+			c.logger.Error("failed to fetch message from kafka", slog.Any("error", err))
 			continue
 		}
 
@@ -60,6 +60,9 @@ func (c *Consumer) Run(ctx context.Context) error {
 				slog.Any("error", err),
 				slog.String("payload", string(msg.Value)),
 			)
+			if commitErr := c.reader.CommitMessages(ctx, msg); commitErr != nil {
+				c.logger.Error("failed to commit message after unmarshal error", slog.Any("error", commitErr))
+			}
 			continue
 		}
 
@@ -73,6 +76,10 @@ func (c *Consumer) Run(ctx context.Context) error {
 			// Here we could handle retries or dead letters
 		} else {
 			taskLog.Info("task from kafka completed successfully")
+		}
+
+		if commitErr := c.reader.CommitMessages(ctx, msg); commitErr != nil {
+			taskLog.Error("failed to commit message after processing", slog.Any("error", commitErr))
 		}
 	}
 }
