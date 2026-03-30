@@ -61,6 +61,7 @@ func (h *Handler) GetJob(c *gin.Context) {
 	id := c.Param("id")
 	job, err := h.useCase.GetJob(c.Request.Context(), id)
 	if err != nil {
+		slog.Error("failed to get job", slog.String("job_id", id), slog.Any("error", err))
 		c.JSON(http.StatusNotFound, gin.H{"error": "job not found"})
 		return
 	}
@@ -70,6 +71,7 @@ func (h *Handler) GetJob(c *gin.Context) {
 func (h *Handler) ListJobs(c *gin.Context) {
 	jobs, err := h.useCase.ListJobs(c.Request.Context())
 	if err != nil {
+		slog.Error("failed to list jobs", slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
