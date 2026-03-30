@@ -60,8 +60,9 @@ type Job struct {
 	Status      Status    `json:"status"`
 	ResultPath  string    `json:"result_path,omitempty"`
 	Options     RenderOptions `json:"options"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	PreviewURL  string        `json:"preview_url,omitempty"`
+	CreatedAt   time.Time     `json:"created_at"`
+	UpdatedAt   time.Time     `json:"updated_at"`
 }
 
 type Task struct {
@@ -83,6 +84,7 @@ type CreateJobRequest struct {
 	FrameEnd    int           `json:"frame_end"`
 	WorkerCount int           `json:"worker_count" binding:"required"`
 	Options     RenderOptions `json:"options"`
+	PreviewURL  string        `json:"preview_url"`
 }
 
 type JobResponse struct {
@@ -109,6 +111,7 @@ func (j Job) LogAttrs() []any {
 		slog.String("job_id", j.ID),
 		slog.String("name", j.Name),
 		slog.String("status", string(j.Status)),
+		slog.String("preview_url", j.PreviewURL),
 		slog.Int("f_start", j.FrameStart),
 		slog.Int("f_end", j.FrameEnd),
 	}

@@ -5,8 +5,10 @@ import (
 	"net/http"
 	"log/slog"
 	"kseilons/job-service/internall/domain"
+	"kseilons/job-service/internall/usecase"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 type JobUseCase interface {
@@ -17,16 +19,21 @@ type JobUseCase interface {
 
 type Handler struct {
 	useCase JobUseCase
+	hub     *usecase.Hub
 }
 
-func NewHandler(useCase JobUseCase) *Handler {
-	return &Handler{useCase: useCase}
+func NewHandler(useCase JobUseCase, hub *usecase.Hub) *Handler {
+	return &Handler{
+		useCase: useCase,
+		hub:     hub,
+	}
 }
 
 func (h *Handler) Register(r *gin.Engine) {
 	r.POST("/jobs", h.CreateJob)
 	r.GET("/jobs", h.ListJobs)
 	r.GET("/jobs/:id", h.GetJob)
+	r.GET("/ws", h.HandleWS)
 }
 
 func (h *Handler) CreateJob(c *gin.Context) {
@@ -67,4 +74,26 @@ func (h *Handler) ListJobs(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, jobs)
+}
+
+func (h *Handler) HandleWS(c *gin.Context) {
+	upgrader := websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			return true // Allow all for now
+		},
+	}
+
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		slog.Error("failed to upgrade to websocket", slog.Any("error", err))
+		return
+	}
+
+	client := &usecase.Client{Hub: h.hub, Conn: conn, Send: make(chan []byte, 256)}
+	h.hub.RegisterClient(client)
+
+	go client.WritePump()
+	go client.ReadPump()
 }

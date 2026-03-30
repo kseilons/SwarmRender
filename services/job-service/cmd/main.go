@@ -49,7 +49,10 @@ func main() {
 	prod := producer.NewKafkaProducer(cfg.Kafka.Brokers)
 	defer prod.Close()
 
-	jobUseCase := usecase.NewJobUseCase(jobRepo, taskRepo, prod, cfg.Kafka)
+	hub := usecase.NewHub()
+	go hub.Run()
+
+	jobUseCase := usecase.NewJobUseCase(jobRepo, taskRepo, prod, cfg.Kafka, hub)
 
 	// Result Consumer
 	consumer := transport_kafka.NewConsumer(
@@ -74,7 +77,7 @@ func main() {
 	}
 
 	router := gin.Default()
-	handler := transport_http.NewHandler(jobUseCase)
+	handler := transport_http.NewHandler(jobUseCase, hub)
 	handler.Register(router)
 
 	srv := &http.Server{

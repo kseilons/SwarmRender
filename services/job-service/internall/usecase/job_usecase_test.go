@@ -24,7 +24,7 @@ func TestJobUseCase_CreateJob_WithFrames(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	cfg := config.KafkaConfig{RenderTopic: "render-tasks"}
-	uc := usecase.NewJobUseCase(mockJobRepo, mockTaskRepo, mockProducer, cfg)
+	uc := usecase.NewJobUseCase(mockJobRepo, mockTaskRepo, mockProducer, cfg, nil)
 
 	req := domain.CreateJobRequest{
 		Name:        "test-job",
@@ -61,7 +61,7 @@ func TestJobUseCase_CreateJob_WithoutFrames(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	cfg := config.KafkaConfig{MetadataTopic: "meta-tasks"}
-	uc := usecase.NewJobUseCase(mockJobRepo, mockTaskRepo, mockProducer, cfg)
+	uc := usecase.NewJobUseCase(mockJobRepo, mockTaskRepo, mockProducer, cfg, nil)
 
 	req := domain.CreateJobRequest{
 		Name:        "meta-job",
@@ -94,7 +94,7 @@ func TestJobUseCase_HandleMetadataResult(t *testing.T) {
 	mockProducer := mocks.NewTaskProducer(t)
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	uc := usecase.NewJobUseCase(mockJobRepo, mockTaskRepo, mockProducer, config.KafkaConfig{})
+	uc := usecase.NewJobUseCase(mockJobRepo, mockTaskRepo, mockProducer, config.KafkaConfig{}, nil)
 
 	jobID := uuid.New().String()
 	ctx := context.Background()
@@ -120,7 +120,7 @@ func TestJobUseCase_HandleMetadataResult(t *testing.T) {
 
 func TestJobUseCase_CreateJob_RepoFailure(t *testing.T) {
 	mockJobRepo := mocks.NewJobRepository(t)
-	uc := usecase.NewJobUseCase(mockJobRepo, nil, nil, config.KafkaConfig{})
+	uc := usecase.NewJobUseCase(mockJobRepo, nil, nil, config.KafkaConfig{}, nil)
 
 	req := domain.CreateJobRequest{Name: "fail", S3Path: "path", WorkerCount: 1}
 	ctx := context.Background()
@@ -134,7 +134,7 @@ func TestJobUseCase_CreateJob_RepoFailure(t *testing.T) {
 func TestJobUseCase_GetJob(t *testing.T) {
 	mockJobRepo := mocks.NewJobRepository(t)
 	mockTaskRepo := mocks.NewTaskRepository(t)
-	uc := usecase.NewJobUseCase(mockJobRepo, mockTaskRepo, nil, config.KafkaConfig{})
+	uc := usecase.NewJobUseCase(mockJobRepo, mockTaskRepo, nil, config.KafkaConfig{}, nil)
 
 	jobID := "job-123"
 	ctx := context.Background()
@@ -166,7 +166,7 @@ func TestJobUseCase_GetJob(t *testing.T) {
 
 func TestJobUseCase_ListJobs(t *testing.T) {
 	mockJobRepo := mocks.NewJobRepository(t)
-	uc := usecase.NewJobUseCase(mockJobRepo, nil, nil, config.KafkaConfig{})
+	uc := usecase.NewJobUseCase(mockJobRepo, nil, nil, config.KafkaConfig{}, nil)
 
 	ctx := context.Background()
 
@@ -186,7 +186,7 @@ func TestJobUseCase_ListJobs(t *testing.T) {
 
 func TestJobUseCase_HandleTaskResult(t *testing.T) {
 	mockTaskRepo := mocks.NewTaskRepository(t)
-	uc := usecase.NewJobUseCase(nil, mockTaskRepo, nil, config.KafkaConfig{})
+	uc := usecase.NewJobUseCase(nil, mockTaskRepo, nil, config.KafkaConfig{}, nil)
 
 	result := domain.RenderResult{
 		TaskID:     "task-1",
@@ -204,7 +204,7 @@ func TestJobUseCase_HandleTaskResult(t *testing.T) {
 
 func TestJobUseCase_UpdateJobStatus_Error(t *testing.T) {
 	mockJobRepo := mocks.NewJobRepository(t)
-	uc := usecase.NewJobUseCase(mockJobRepo, nil, nil, config.KafkaConfig{})
+	uc := usecase.NewJobUseCase(mockJobRepo, nil, nil, config.KafkaConfig{}, nil)
 	ctx := context.Background()
 
 	mockJobRepo.On("UpdateJobStatus", ctx, "job-1", domain.StatusProcessing).Return(assert.AnError).Once()
@@ -215,7 +215,7 @@ func TestJobUseCase_UpdateJobStatus_Error(t *testing.T) {
 func TestJobUseCase_RequestMetadata_Error(t *testing.T) {
 	mockProducer := mocks.NewTaskProducer(t)
 	mockJobRepo := mocks.NewJobRepository(t)
-	uc := usecase.NewJobUseCase(mockJobRepo, nil, mockProducer, config.KafkaConfig{MetadataTopic: "meta"})
+	uc := usecase.NewJobUseCase(mockJobRepo, nil, mockProducer, config.KafkaConfig{MetadataTopic: "meta"}, nil)
 	ctx := context.Background()
 
 	job := domain.Job{ID: "job-1"}
@@ -226,6 +226,6 @@ func TestJobUseCase_RequestMetadata_Error(t *testing.T) {
 }
 
 func TestJobUseCase_SetKafkaConfig(t *testing.T) {
-	uc := usecase.NewJobUseCase(nil, nil, nil, config.KafkaConfig{})
+	uc := usecase.NewJobUseCase(nil, nil, nil, config.KafkaConfig{}, nil)
 	uc.SetKafkaConfig(config.KafkaConfig{RenderTopic: "new-topic"})
 }

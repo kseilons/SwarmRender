@@ -36,14 +36,16 @@ type JobUseCase struct {
 	taskRepo TaskRepository
 	producer TaskProducer
 	kafkaCfg config.KafkaConfig
+	hub      *Hub
 }
 
-func NewJobUseCase(jobRepo JobRepository, taskRepo TaskRepository, producer TaskProducer, cfg config.KafkaConfig) *JobUseCase {
+func NewJobUseCase(jobRepo JobRepository, taskRepo TaskRepository, producer TaskProducer, cfg config.KafkaConfig, hub *Hub) *JobUseCase {
 	return &JobUseCase{
 		jobRepo:  jobRepo,
 		taskRepo: taskRepo,
 		producer: producer,
 		kafkaCfg: cfg,
+		hub:      hub,
 	}
 }
 
@@ -60,6 +62,7 @@ func (uc *JobUseCase) CreateJob(ctx context.Context, req domain.CreateJobRequest
 		FrameEnd:    req.FrameEnd,
 		WorkerCount: req.WorkerCount,
 		Options:     req.Options,
+		PreviewURL:  req.PreviewURL,
 		Status:      domain.StatusCreated,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
@@ -206,7 +209,15 @@ func (uc *JobUseCase) HandleMetadataResult(ctx context.Context, jobID string, fr
 func (uc *JobUseCase) HandleTaskResult(ctx context.Context, result domain.RenderResult, logger *slog.Logger) error {
 	logger.Info("handling task result", slog.String("task_id", result.TaskID), slog.String("status", string(result.Status)))
 
-	return uc.taskRepo.UpdateTaskStatus(ctx, result.TaskID, result.Status, result.WorkerID, result.ResultPath)
+	err := uc.taskRepo.UpdateTaskStatus(ctx, result.TaskID, result.Status, result.WorkerID, result.ResultPath)
+	if err == nil && uc.hub != nil {
+		uc.hub.BroadcastStatusUpdate(map[string]any{
+			"type":    "task_update",
+			"task_id": result.TaskID,
+			"status":  result.Status,
+		})
+	}
+	return err
 }
 
 func (uc *JobUseCase) UpdateJobStatus(ctx context.Context, id string, status domain.Status, logger *slog.Logger) error {
@@ -221,6 +232,14 @@ func (uc *JobUseCase) UpdateJobStatus(ctx context.Context, id string, status dom
 			slog.Any("error", err),
 		)
 		return err
+	}
+
+	if uc.hub != nil {
+		uc.hub.BroadcastStatusUpdate(map[string]any{
+			"type":   "job_update",
+			"job_id": id,
+			"status": status,
+		})
 	}
 	return nil
 }

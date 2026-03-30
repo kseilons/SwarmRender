@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     worker_count INTEGER NOT NULL,
     status job_status NOT NULL,
     result_path TEXT,
+    preview_url TEXT,
     options JSONB NOT NULL DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP

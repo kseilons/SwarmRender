@@ -19,7 +19,7 @@ import (
 func TestHandler_CreateJob(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	mockUC := mocks.NewJobUseCase(t)
-	handler := transport_http.NewHandler(mockUC)
+	handler := transport_http.NewHandler(mockUC, nil)
 
 	router := gin.New()
 	handler.Register(router)
@@ -60,7 +60,7 @@ func TestHandler_CreateJob(t *testing.T) {
 func TestHandler_GetJob(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	mockUC := mocks.NewJobUseCase(t)
-	handler := transport_http.NewHandler(mockUC)
+	handler := transport_http.NewHandler(mockUC, nil)
 
 	router := gin.New()
 	handler.Register(router)
@@ -96,7 +96,7 @@ func TestHandler_GetJob(t *testing.T) {
 func TestHandler_ListJobs(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	mockUC := mocks.NewJobUseCase(t)
-	handler := transport_http.NewHandler(mockUC)
+	handler := transport_http.NewHandler(mockUC, nil)
 
 	router := gin.New()
 	handler.Register(router)
