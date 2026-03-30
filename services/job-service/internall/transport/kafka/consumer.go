@@ -12,6 +12,8 @@ import (
 
 type JobUseCase interface {
 	UpdateJobStatus(ctx context.Context, id string, status domain.Status, logger *slog.Logger) error
+	HandleMetadataResult(ctx context.Context, jobID string, frameStart, frameEnd int, logger *slog.Logger) error
+	HandleTaskResult(ctx context.Context, result domain.RenderResult, logger *slog.Logger) error
 }
 
 type Consumer struct {
@@ -67,12 +69,24 @@ func (c *Consumer) Run(ctx context.Context) error {
 		// Example: if status is FAILED, maybe update job status
 		// Here we need logic to find JobID from TaskID or ProjectID
 		// For now, let's assume TaskID has prefix or we have a map
-		// But let's just log and update if it's a metadata task result
+		// Handle Metadata Result
 		if result.Metadata != nil {
-			c.logger.Info("received metadata",
+			c.logger.Info("received metadata, triggering split",
 				slog.Int("frame_start", result.Metadata.FrameStart),
 				slog.Int("frame_end", result.Metadata.FrameEnd),
 			)
+			// Assuming TaskID is "meta-<JobID>"
+			if len(result.TaskID) > 5 {
+				jobID := result.TaskID[5:] // Skip "meta-" prefix
+				if err := c.useCase.HandleMetadataResult(ctx, jobID, result.Metadata.FrameStart, result.Metadata.FrameEnd, c.logger); err != nil {
+					c.logger.Error("failed to handle metadata result", slog.Any("error", err))
+				}
+			}
+		} else {
+			// Normal Task Result
+			if err := c.useCase.HandleTaskResult(ctx, result, c.logger); err != nil {
+				c.logger.Error("failed to handle task result", slog.Any("error", err))
+			}
 		}
 
 		if result.Error != "" {

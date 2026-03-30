@@ -10,8 +10,9 @@ import (
 )
 
 type JobUseCase interface {
-	CreateJob(ctx context.Context, job domain.Job, logger *slog.Logger) error
-	UpdateJobStatus(ctx context.Context, id string, status domain.Status, logger *slog.Logger) error
+	CreateJob(ctx context.Context, req domain.CreateJobRequest, logger *slog.Logger) (domain.Job, error)
+	GetJob(ctx context.Context, id string) (domain.JobResponse, error)
+	ListJobs(ctx context.Context) ([]domain.Job, error)
 }
 
 type Handler struct {
@@ -24,27 +25,46 @@ func NewHandler(useCase JobUseCase) *Handler {
 
 func (h *Handler) Register(r *gin.Engine) {
 	r.POST("/jobs", h.CreateJob)
+	r.GET("/jobs", h.ListJobs)
+	r.GET("/jobs/:id", h.GetJob)
 }
 
 func (h *Handler) CreateJob(c *gin.Context) {
-	var job domain.Job
-	if err := c.ShouldBindJSON(&job); err != nil {
+	var req domain.CreateJobRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Error("failed to bind job json", slog.Any("error", err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Enrich logger with job details for this request
-	logger := slog.Default().With(job.LogAttrs()...)
-
+	logger := slog.Default().With(slog.String("job_name", req.Name))
 	logger.Info("received job creation request")
 
-	if err := h.useCase.CreateJob(c.Request.Context(), job, logger); err != nil {
+	job, err := h.useCase.CreateJob(c.Request.Context(), req, logger)
+	if err != nil {
 		logger.Error("failed to create job", slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	logger.Info("job creation request handled successfully")
 	c.JSON(http.StatusAccepted, job)
+}
+
+func (h *Handler) GetJob(c *gin.Context) {
+	id := c.Param("id")
+	job, err := h.useCase.GetJob(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "job not found"})
+		return
+	}
+	c.JSON(http.StatusOK, job)
+}
+
+func (h *Handler) ListJobs(c *gin.Context) {
+	jobs, err := h.useCase.ListJobs(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, jobs)
 }

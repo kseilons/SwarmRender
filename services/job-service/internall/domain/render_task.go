@@ -13,6 +13,7 @@ const (
 	StatusProcessing      Status = "PROCESSING"
 	StatusCompleted       Status = "COMPLETED"
 	StatusFailed          Status = "FAILED"
+	StatusStitching       Status = "STITCHING"
 )
 
 
@@ -57,7 +58,10 @@ type Job struct {
 	FrameEnd    int       `json:"frame_end"`
 	WorkerCount int       `json:"worker_count"`
 	Status      Status    `json:"status"`
+	ResultPath  string    `json:"result_path,omitempty"`
+	Options     RenderOptions `json:"options"`
 	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type Task struct {
@@ -67,7 +71,23 @@ type Task struct {
 	FrameEnd   int       `json:"frame_end"`
 	Status     Status    `json:"status"`
 	WorkerID   string    `json:"worker_id,omitempty"`
+	ResultPath string    `json:"result_path,omitempty"`
+	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
+}
+
+type CreateJobRequest struct {
+	Name        string        `json:"name" binding:"required"`
+	S3Path      string        `json:"s3_path" binding:"required"`
+	FrameStart  int           `json:"frame_start"`
+	FrameEnd    int           `json:"frame_end"`
+	WorkerCount int           `json:"worker_count" binding:"required"`
+	Options     RenderOptions `json:"options"`
+}
+
+type JobResponse struct {
+	Job
+	Tasks []Task `json:"tasks,omitempty"`
 }
 
 type ProjectMetadata struct {
@@ -79,8 +99,9 @@ type RenderResult struct {
 	TaskID   string           `json:"task_id"`
 	Status   Status           `json:"status"`
 	WorkerID string           `json:"worker_id"`
-	Error    string           `json:"error,omitempty"`
-	Metadata *ProjectMetadata `json:"metadata,omitempty"`
+	Error      string           `json:"error,omitempty"`
+	Metadata   *ProjectMetadata `json:"metadata,omitempty"`
+	ResultPath string           `json:"result_path,omitempty"`
 }
 
 func (j Job) LogAttrs() []any {

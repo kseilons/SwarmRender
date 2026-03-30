@@ -44,11 +44,12 @@ func main() {
 	defer pool.Close()
 
 	// Layers
-	repo := postgres.NewRepository(pool)
+	jobRepo := postgres.NewJobRepository(pool)
+	taskRepo := postgres.NewTaskRepository(pool)
 	prod := producer.NewKafkaProducer(cfg.Kafka.Brokers)
 	defer prod.Close()
 
-	jobUseCase := usecase.NewJobUseCase(repo, prod, cfg.Kafka)
+	jobUseCase := usecase.NewJobUseCase(jobRepo, taskRepo, prod, cfg.Kafka)
 
 	// Result Consumer
 	consumer := transport_kafka.NewConsumer(

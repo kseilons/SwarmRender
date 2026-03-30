@@ -4,15 +4,26 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"kseilons/job-service/internall/config"
 	"kseilons/job-service/internall/domain"
+
+	"github.com/google/uuid"
 )
 
 type JobRepository interface {
 	CreateJob(ctx context.Context, job domain.Job) error
 	GetJob(ctx context.Context, id string) (domain.Job, error)
 	UpdateJobStatus(ctx context.Context, id string, status domain.Status) error
+	UpdateJobMetadata(ctx context.Context, id string, frameStart, frameEnd int) error
+	ListJobs(ctx context.Context) ([]domain.Job, error)
+}
+
+type TaskRepository interface {
+	CreateTasks(ctx context.Context, tasks []domain.Task) error
+	GetTasksByJobID(ctx context.Context, jobID string) ([]domain.Task, error)
+	UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID string, resultPath string) error
 }
 
 type TaskProducer interface {
@@ -21,14 +32,16 @@ type TaskProducer interface {
 }
 
 type JobUseCase struct {
-	repo     JobRepository
+	jobRepo  JobRepository
+	taskRepo TaskRepository
 	producer TaskProducer
 	kafkaCfg config.KafkaConfig
 }
 
-func NewJobUseCase(repo JobRepository, producer TaskProducer, cfg config.KafkaConfig) *JobUseCase {
+func NewJobUseCase(jobRepo JobRepository, taskRepo TaskRepository, producer TaskProducer, cfg config.KafkaConfig) *JobUseCase {
 	return &JobUseCase{
-		repo:     repo,
+		jobRepo:  jobRepo,
+		taskRepo: taskRepo,
 		producer: producer,
 		kafkaCfg: cfg,
 	}
@@ -38,26 +51,44 @@ func (uc *JobUseCase) SetKafkaConfig(cfg config.KafkaConfig) {
 	uc.kafkaCfg = cfg
 }
 
-func (uc *JobUseCase) CreateJob(ctx context.Context, job domain.Job, logger *slog.Logger) error {
+func (uc *JobUseCase) CreateJob(ctx context.Context, req domain.CreateJobRequest, logger *slog.Logger) (domain.Job, error) {
+	job := domain.Job{
+		ID:          uuid.New().String(),
+		Name:        req.Name,
+		S3Path:      req.S3Path,
+		FrameStart:  req.FrameStart,
+		FrameEnd:    req.FrameEnd,
+		WorkerCount: req.WorkerCount,
+		Options:     req.Options,
+		Status:      domain.StatusCreated,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+
 	logger = logger.With(job.LogAttrs()...)
 	logger.Info("creating new job")
 
-	// 1. Initial job record
-	job.Status = domain.StatusCreated
-	if err := uc.repo.CreateJob(ctx, job); err != nil {
+	if err := uc.jobRepo.CreateJob(ctx, job); err != nil {
 		logger.Error("failed to create job in repo", slog.Any("error", err))
-		return fmt.Errorf("failed to create job: %w", err)
+		return domain.Job{}, fmt.Errorf("failed to create job: %w", err)
 	}
 
 	// 2. Decide if we need metadata first
 	if job.FrameStart == 0 && job.FrameEnd == 0 {
 		logger.Info("missing frame range, requesting metadata")
-		return uc.RequestMetadata(ctx, job, logger)
+		if err := uc.RequestMetadata(ctx, job, logger); err != nil {
+			return job, err
+		}
+		return job, nil
 	}
 
-	// 3. Otherwise, split and send render tasks (simplified for now)
-	logger.Info("job created successfully")
-	return nil
+	// 3. Otherwise, split and send render tasks
+	if err := uc.SplitJobIntoTasks(ctx, job, logger); err != nil {
+		return job, err
+	}
+
+	logger.Info("job created and tasks dispatched successfully")
+	return job, nil
 }
 
 func (uc *JobUseCase) RequestMetadata(ctx context.Context, job domain.Job, logger *slog.Logger) error {
@@ -66,12 +97,12 @@ func (uc *JobUseCase) RequestMetadata(ctx context.Context, job domain.Job, logge
 			ProjectID: job.ID,
 			TaskID:    fmt.Sprintf("meta-%s", job.ID),
 		},
-		BlendFile: "project.blend", // Should come from job or s3_path
+		BlendFile: job.S3Path,
 	}
 
-	topic := "metadata-tasks" // Fallback
-	if uc.kafkaCfg.MetadataTopic != "" {
-		topic = uc.kafkaCfg.MetadataTopic
+	topic := uc.kafkaCfg.MetadataTopic
+	if topic == "" {
+		topic = "metadata-tasks"
 	}
 
 	logger.Info("sending metadata task",
@@ -90,13 +121,101 @@ func (uc *JobUseCase) RequestMetadata(ctx context.Context, job domain.Job, logge
 	return uc.UpdateJobStatus(ctx, job.ID, domain.StatusPendingMetadata, logger)
 }
 
+func (uc *JobUseCase) SplitJobIntoTasks(ctx context.Context, job domain.Job, logger *slog.Logger) error {
+	logger.Info("splitting job into tasks", slog.Int("worker_count", job.WorkerCount))
+
+	totalFrames := job.FrameEnd - job.FrameStart + 1
+	if totalFrames <= 0 {
+		return fmt.Errorf("invalid frame range: %d to %d", job.FrameStart, job.FrameEnd)
+	}
+
+	framesPerWorker := totalFrames / job.WorkerCount
+	if framesPerWorker == 0 {
+		framesPerWorker = 1
+	}
+
+	var tasks []domain.Task
+	currentFrame := job.FrameStart
+
+	for i := 0; i < job.WorkerCount && currentFrame <= job.FrameEnd; i++ {
+		endFrame := currentFrame + framesPerWorker - 1
+		if i == job.WorkerCount-1 || endFrame > job.FrameEnd {
+			endFrame = job.FrameEnd
+		}
+
+		task := domain.Task{
+			ID:         uuid.New().String(),
+			JobID:      job.ID,
+			FrameStart: currentFrame,
+			FrameEnd:   endFrame,
+			Status:     domain.StatusCreated,
+			CreatedAt:  time.Now(),
+			UpdatedAt:  time.Now(),
+		}
+		tasks = append(tasks, task)
+		currentFrame = endFrame + 1
+	}
+
+	if err := uc.taskRepo.CreateTasks(ctx, tasks); err != nil {
+		return fmt.Errorf("failed to save tasks: %w", err)
+	}
+
+	// Send to Kafka
+	topic := uc.kafkaCfg.RenderTopic
+	for _, t := range tasks {
+		renderTask := domain.RenderTask{
+			BaseTask: domain.BaseTask{
+				ProjectID: job.ID,
+				TaskID:    t.ID,
+			},
+			CommonTask: domain.CommonTask{
+				StartFrame: t.FrameStart,
+				EndFrame:   t.FrameEnd,
+				Options:    job.Options,
+			},
+			BlendFile: job.S3Path,
+		}
+
+		if err := uc.producer.SendTask(ctx, job.ID, renderTask, topic); err != nil {
+			logger.Error("failed to send render task", slog.String("task_id", t.ID), slog.Any("error", err))
+		}
+	}
+
+	return uc.UpdateJobStatus(ctx, job.ID, domain.StatusProcessing, logger)
+}
+
+func (uc *JobUseCase) HandleMetadataResult(ctx context.Context, jobID string, frameStart, frameEnd int, logger *slog.Logger) error {
+	logger.Info("handling metadata result",
+		slog.String("job_id", jobID),
+		slog.Int("f_start", frameStart),
+		slog.Int("f_end", frameEnd),
+	)
+
+	if err := uc.jobRepo.UpdateJobMetadata(ctx, jobID, frameStart, frameEnd); err != nil {
+		return fmt.Errorf("failed to update job metadata: %w", err)
+	}
+
+	job, err := uc.jobRepo.GetJob(ctx, jobID)
+	if err != nil {
+		return fmt.Errorf("failed to get job after metadata update: %w", err)
+	}
+
+	return uc.SplitJobIntoTasks(ctx, job, logger)
+}
+
+func (uc *JobUseCase) HandleTaskResult(ctx context.Context, result domain.RenderResult, logger *slog.Logger) error {
+	logger.Info("handling task result", slog.String("task_id", result.TaskID), slog.String("status", string(result.Status)))
+
+	return uc.taskRepo.UpdateTaskStatus(ctx, result.TaskID, result.Status, result.WorkerID, result.ResultPath)
+}
+
 func (uc *JobUseCase) UpdateJobStatus(ctx context.Context, id string, status domain.Status, logger *slog.Logger) error {
 	logger.Info("updating job status",
 		slog.String("job_id", id),
 		slog.String("new_status", string(status)),
 	)
 
-	if err := uc.repo.UpdateJobStatus(ctx, id, status); err != nil {
+	if err := uc.jobRepo.UpdateJobStatus(ctx, id, status); err != nil {
 		logger.Error("failed to update job status",
 			slog.String("job_id", id),
 			slog.Any("error", err),
@@ -104,4 +223,25 @@ func (uc *JobUseCase) UpdateJobStatus(ctx context.Context, id string, status dom
 		return err
 	}
 	return nil
+}
+
+func (uc *JobUseCase) GetJob(ctx context.Context, id string) (domain.JobResponse, error) {
+	job, err := uc.jobRepo.GetJob(ctx, id)
+	if err != nil {
+		return domain.JobResponse{}, err
+	}
+
+	tasks, err := uc.taskRepo.GetTasksByJobID(ctx, id)
+	if err != nil {
+		return domain.JobResponse{}, err
+	}
+
+	return domain.JobResponse{
+		Job:   job,
+		Tasks: tasks,
+	}, nil
+}
+
+func (uc *JobUseCase) ListJobs(ctx context.Context) ([]domain.Job, error) {
+	return uc.jobRepo.ListJobs(ctx)
 }
