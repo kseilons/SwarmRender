@@ -45,10 +45,10 @@ func main() {
 
 	// Layers
 	repo := postgres.NewRepository(pool)
-	prod := producer.NewKafkaProducer(cfg.Kafka.Brokers, cfg.Kafka.TaskTopic)
+	prod := producer.NewKafkaProducer(cfg.Kafka.Brokers)
 	defer prod.Close()
 
-	jobUseCase := usecase.NewJobUseCase(repo, prod, log)
+	jobUseCase := usecase.NewJobUseCase(repo, prod, cfg.Kafka)
 
 	// Result Consumer
 	consumer := transport_kafka.NewConsumer(
@@ -88,12 +88,10 @@ func main() {
 		}
 	}()
 
-	// Wait for termination signal
 	<-ctx.Done()
 
 	log.Info("shutting down job-service gracefully...")
 
-	// Final Cleanup (with timeout)
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutdownCancel()
 

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"kseilons/job-service/internall/domain"
+
 
 	"github.com/segmentio/kafka-go"
 )
@@ -14,24 +14,24 @@ type KafkaProducer struct {
 	writer *kafka.Writer
 }
 
-func NewKafkaProducer(brokers []string, topic string) *KafkaProducer {
+func NewKafkaProducer(brokers []string) *KafkaProducer {
 	return &KafkaProducer{
 		writer: &kafka.Writer{
 			Addr:     kafka.TCP(brokers...),
-			Topic:    topic,
 			Balancer: &kafka.LeastBytes{},
 		},
 	}
 }
 
-func (p *KafkaProducer) SendTask(ctx context.Context, task domain.RenderTask) error {
+func (p *KafkaProducer) SendTask(ctx context.Context, projectID string, task any, topic string) error {
 	payload, err := json.Marshal(task)
 	if err != nil {
-		return fmt.Errorf("failed to marshal render task: %w", err)
+		return fmt.Errorf("failed to marshal task: %w", err)
 	}
 
 	err = p.writer.WriteMessages(ctx, kafka.Message{
-		Key:   []byte(task.ProjectID),
+		Topic: topic,
+		Key:   []byte(projectID),
 		Value: payload,
 	})
 	if err != nil {
