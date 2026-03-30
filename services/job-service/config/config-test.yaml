@@ -1,0 +1,16 @@
+env: "test"
+http:
+  address: "localhost:8082"
+database:
+  host: "localhost"
+  port: 5432
+  user: "postgres"
+  password: "password"
+  name: "job_db_test"
+  sslmode: "disable"
+kafka:
+  brokers: ["localhost:9092"]
+  render_topic: "test-render-tasks"
+  metadata_topic: "test-metadata-tasks"
+  result_topic: "test-render-results"
+  result_group_id: "test-job-service-results"
