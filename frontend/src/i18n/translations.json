@@ -1,0 +1,124 @@
+{
+  "ru": {
+    "common": {
+      "add_project": "Добавить проект",
+      "search_placeholder": "Поиск по ID или названию...",
+      "back": "Назад к панели",
+      "loading": "Синхронизация...",
+      "error_loading": "Ошибка при загрузке данных",
+      "no_active_jobs": "Активные проекты отсутствуют",
+      "add_first_project": "Добавьте проект, чтобы начать рендеринг",
+      "unassigned": "не назначен",
+      "rendering_preview": "Генерация превью...",
+      "workers": "Воркеров",
+      "frames": "Кадры"
+    },
+    "jobs_page": {
+      "title": "Дашборд рендеринга",
+      "subtitle": "Мониторинг и управление распределенной очередью рендеринга"
+    },
+    "job_details": {
+      "engine": "Движок рендера",
+      "frame_range": "Диапазон кадров",
+      "allocation": "Выделение узлов",
+      "cluster_title": "Кластер активного рендеринга",
+      "th_node": "Узел / ID задачи",
+      "th_frames": "Сегмент кадров",
+      "th_state": "Состояние",
+      "th_worker": "Назначенный воркер",
+      "th_sync": "Синхронизация",
+      "progress_trace": "Прогресс выполнения",
+      "active_graph": "График активной производительности"
+    },
+    "create_modal": {
+      "title": "Новый проект рендеринга",
+      "step_1_title": "Настройка проекта",
+      "field_name": "Название проекта",
+      "field_file": "Файл проекта .blend",
+      "uploading": "Загрузка в MinIO...",
+      "upload_complete": "Загрузка завершена",
+      "upload_instruction": "Нажмите, чтобы выбрать .blend файл",
+      "upload_limit": "Поддержка до 500МБ",
+      "continue": "Продолжить",
+      "step_2_title": "Параметры рендера",
+      "start_frame": "Начальный кадр",
+      "end_frame": "Конечный кадр",
+      "compute_nodes": "Вычислительные узлы",
+      "slots": "Слотов",
+      "go_back": "Вернуться",
+      "initialize": "Запустить рендеринг",
+      "step_3_title": "Проект успешно запущен",
+      "notifying_workers": "Воркеры получают уведомления о новой задаче.",
+      "pack_textures_info": "Рендеринг будет распределен по узлам кластера. Убедитесь, что все текстуры упакованы в .blend файл (File > External Data > Pack All Into .blend)."
+    },
+    "status": {
+      "CREATED": "СОЗДАН",
+      "PENDING_METADATA": "ОЖИДАНИЕ МЕТАДАННЫХ",
+      "PROCESSING": "В ОБРАБОТКЕ",
+      "COMPLETED": "ЗАВЕРШЕН",
+      "FAILED": "ОШИБКА",
+      "STITCHING": "СКЛЕЙКА"
+    }
+  },
+  "en": {
+    "common": {
+      "add_project": "Add Project",
+      "search_placeholder": "Search by ID or name...",
+      "back": "Back to Dashboard",
+      "loading": "Synchronizing...",
+      "error_loading": "Error loading jobs",
+      "no_active_jobs": "No active projects",
+      "add_first_project": "Add a new project to start rendering",
+      "unassigned": "unassigned",
+      "rendering_preview": "Rendering preview...",
+      "workers": "Workers",
+      "frames": "Frames"
+    },
+    "jobs_page": {
+      "title": "Render Dashboard",
+      "subtitle": "Monitor and manage your distributed rendering queue"
+    },
+    "job_details": {
+      "engine": "Render Engine",
+      "frame_range": "Frame Range",
+      "allocation": "Worker Allocation",
+      "cluster_title": "Active Rendering Cluster",
+      "th_node": "Node / Task ID",
+      "th_frames": "Frame Segment",
+      "th_state": "State",
+      "th_worker": "Worker Assignment",
+      "th_sync": "Synchronization",
+      "progress_trace": "Progress Trace",
+      "active_graph": "Active Performance Graph"
+    },
+    "create_modal": {
+      "title": "New Rendering Project",
+      "step_1_title": "Project Setup",
+      "field_name": "Project Name",
+      "field_file": "Blend Project File",
+      "uploading": "Uploading to MinIO...",
+      "upload_complete": "Upload Complete",
+      "upload_instruction": "Click to upload .blend file",
+      "upload_limit": "Support up to 500MB",
+      "continue": "Continue",
+      "step_2_title": "Render Parameters",
+      "start_frame": "Start Frame",
+      "end_frame": "End Frame",
+      "compute_nodes": "Compute Nodes (Workers)",
+      "slots": "Slots",
+      "go_back": "Go Back",
+      "initialize": "Initialize Render Job",
+      "step_3_title": "Successfully Dispatched",
+      "notifying_workers": "Workers are being notified about the new job.",
+      "pack_textures_info": "Rendering will be distributed across the cluster nodes. Ensure your .blend file has all textures packed (File > External Data > Pack All Into .blend)."
+    },
+    "status": {
+      "CREATED": "CREATED",
+      "PENDING_METADATA": "PENDING METADATA",
+      "PROCESSING": "PROCESSING",
+      "COMPLETED": "COMPLETED",
+      "FAILED": "FAILED",
+      "STITCHING": "STITCHING"
+    }
+  }
+}
