@@ -17,6 +17,7 @@ import (
 	"kseilons/job-service/internall/usecase"
 	"kseilons/job-service/pkg/logger"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -77,6 +78,7 @@ func main() {
 	}
 
 	router := gin.Default()
+	router.Use(cors.Default()) // Enable CORS
 	handler := transport_http.NewHandler(jobUseCase, hub)
 	handler.Register(router)
 
