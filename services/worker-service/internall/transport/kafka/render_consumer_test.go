@@ -20,16 +20,28 @@ func TestConsumer_Run(t *testing.T) {
 
 	t.Run("Success", func(t *testing.T) {
 		mockReader := mocks.NewReader(t)
-		mockUC := mocks.NewRenderUseCase(t)
+		mockRenderUC := mocks.NewRenderUseCase(t)
+		mockMetadataUC := mocks.NewMetadataUseCase(t)
 		consumer := &Consumer{
-			reader:  mockReader,
-			useCase: mockUC,
-			logger:  logger,
+			reader:     mockReader,
+			renderUC:   mockRenderUC,
+			metadataUC: mockMetadataUC,
+			logger:     logger,
 		}
 
-		task := domain.RenderTask{ProjectID: "test-1"}
+		task := domain.RenderTask{
+			BaseTask: domain.BaseTask{
+				ProjectID: "test-1",
+				TaskID:    "task-1",
+			},
+			BlendFile: "project.blend",
+		}
 		payload, _ := json.Marshal(task)
-		msg := kafka.Message{Value: payload, Key: []byte("key")}
+		msg := kafka.Message{
+			Value: payload,
+			Key:   []byte("key"),
+			Topic: "render-tasks",
+		}
 
 		ctx, cancel := context.WithCancel(context.Background())
 
@@ -37,22 +49,24 @@ func TestConsumer_Run(t *testing.T) {
 		mockReader.On("FetchMessage", mock.Anything).Return(kafka.Message{}, errors.New("stop")).Run(func(args mock.Arguments) {
 			cancel()
 		})
-		mockUC.On("Execute", mock.Anything, mock.Anything, task).Return([]byte("ok"), nil).Once()
+		mockRenderUC.On("Execute", mock.Anything, mock.Anything, task).Return([]byte("ok"), nil).Once()
 		mockReader.On("CommitMessages", mock.Anything, msg).Return(nil).Once()
 
 		_ = consumer.Run(ctx)
 		
 		mockReader.AssertExpectations(t)
-		mockUC.AssertExpectations(t)
+		mockRenderUC.AssertExpectations(t)
 	})
 
 	t.Run("UnmarshalError", func(t *testing.T) {
 		mockReader := mocks.NewReader(t)
-		mockUC := mocks.NewRenderUseCase(t)
+		mockRenderUC := mocks.NewRenderUseCase(t)
+		mockMetadataUC := mocks.NewMetadataUseCase(t)
 		consumer := &Consumer{
-			reader:  mockReader,
-			useCase: mockUC,
-			logger:  logger,
+			reader:     mockReader,
+			renderUC:   mockRenderUC,
+			metadataUC: mockMetadataUC,
+			logger:     logger,
 		}
 
 		msg := kafka.Message{Value: []byte("invalid json")}
@@ -71,29 +85,39 @@ func TestConsumer_Run(t *testing.T) {
 
 	t.Run("UseCaseError", func(t *testing.T) {
 		mockReader := mocks.NewReader(t)
-		mockUC := mocks.NewRenderUseCase(t)
+		mockRenderUC := mocks.NewRenderUseCase(t)
+		mockMetadataUC := mocks.NewMetadataUseCase(t)
 		consumer := &Consumer{
-			reader:  mockReader,
-			useCase: mockUC,
-			logger:  logger,
+			reader:     mockReader,
+			renderUC:   mockRenderUC,
+			metadataUC: mockMetadataUC,
+			logger:     logger,
 		}
 
-		task := domain.RenderTask{ProjectID: "test-fail"}
+		task := domain.RenderTask{
+			BaseTask: domain.BaseTask{
+				ProjectID: "test-fail",
+				TaskID:    "task-fail",
+			},
+		}
 		payload, _ := json.Marshal(task)
-		msg := kafka.Message{Value: payload}
+		msg := kafka.Message{
+			Value: payload,
+			Topic: "render-tasks",
+		}
 		ctx, cancel := context.WithCancel(context.Background())
 
 		mockReader.On("FetchMessage", mock.Anything).Return(msg, nil).Once()
 		mockReader.On("FetchMessage", mock.Anything).Return(kafka.Message{}, context.Canceled).Run(func(args mock.Arguments) {
 			cancel()
 		})
-		mockUC.On("Execute", mock.Anything, mock.Anything, task).Return(nil, errors.New("render failed")).Once()
+		mockRenderUC.On("Execute", mock.Anything, mock.Anything, task).Return(nil, errors.New("render failed")).Once()
 		mockReader.On("CommitMessages", mock.Anything, msg).Return(nil).Once()
 
 		_ = consumer.Run(ctx)
 		
 		mockReader.AssertExpectations(t)
-		mockUC.AssertExpectations(t)
+		mockRenderUC.AssertExpectations(t)
 	})
 
 	t.Run("ContextCanceled", func(t *testing.T) {

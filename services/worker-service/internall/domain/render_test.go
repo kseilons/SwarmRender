@@ -9,7 +9,9 @@ import (
 
 func TestRenderTask_LogAttrs(t *testing.T) {
 	task := RenderTask{
-		ProjectID: "proj-123",
+		BaseTask: BaseTask{
+			ProjectID: "proj-123",
+		},
 		BlendFile: "main.blend",
 		CommonTask: CommonTask{
 			StartFrame: 1,

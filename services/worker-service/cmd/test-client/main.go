@@ -94,7 +94,10 @@ func main() {
 
 	// 3. Send Task to Kafka
 	task := domain.RenderTask{
-		ProjectID: *projectID,
+		BaseTask: domain.BaseTask{
+			ProjectID: *projectID,
+			TaskID:    fmt.Sprintf("test-%s", *projectID),
+		},
 		BlendFile: blendFile,
 		CommonTask: domain.CommonTask{
 			StartFrame: *startFrame,
@@ -116,7 +119,7 @@ func main() {
 
 	writer := &kafka.Writer{
 		Addr:     kafka.TCP(cfg.Kafka.Brokers...),
-		Topic:    cfg.Kafka.Topic,
+		Topic:    cfg.Kafka.RenderTopic,
 		Balancer: &kafka.LeastBytes{},
 	}
 	defer writer.Close()
@@ -129,6 +132,6 @@ func main() {
 		log.Fatalf("Failed to send task to Kafka: %v", err)
 	}
 
-	fmt.Printf("Task sent to Kafka topic %s successfully.\n", cfg.Kafka.Topic)
+	fmt.Printf("Task sent to Kafka topic %s successfully.\n", cfg.Kafka.RenderTopic)
 	fmt.Printf("Project: %s, File: %s, Frames: %d-%d\n", *projectID, blendFile, *startFrame, *endFrame)
 }

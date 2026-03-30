@@ -41,9 +41,10 @@ func main() {
 	}()
 
 	renderUseCase := usecase.NewRenderUseCase(engine, minioRepo, resultProducer, cfg.Blender.AllowedDevices, cfg.Blender.Threads)
+	metadataUseCase := usecase.NewMetadataUseCase(engine, minioRepo, resultProducer)
 
 	// Initialize Transport (Kafka Consumer)
-	consumer := kafka.NewConsumer(cfg.Kafka, renderUseCase, log)
+	consumer := kafka.NewConsumer(cfg.Kafka, renderUseCase, metadataUseCase, log)
 	defer func() {
 		if err := consumer.Close(); err != nil {
 			log.Error("failed to close kafka consumer", logger.Err(err))

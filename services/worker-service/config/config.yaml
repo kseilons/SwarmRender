@@ -12,7 +12,8 @@ blender:
 kafka:
   brokers:
     - "localhost:9092"
-  topic: "render-tasks"
+  render_topic: "render-tasks"
+  metadata_topic: "metadata-tasks"
   group_id: "worker-service"
 minio:
   endpoint: "localhost:9000"

@@ -11,5 +11,6 @@ database:
 kafka:
   brokers: ["localhost:9092"]
   task_topic: "render-tasks"
+  metadata_topic: "metadata-tasks"
   result_topic: "render-results"
   result_group_id: "job-service-results"

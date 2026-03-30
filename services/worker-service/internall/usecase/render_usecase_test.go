@@ -26,6 +26,11 @@ func TestRenderUseCase_Execute_Success(t *testing.T) {
 	uc := usecase.NewRenderUseCase(mockRenderer, mockRepo, mockProducer, allowedDevices, 4)
 
 	task := domain.RenderTask{
+		BaseTask: domain.BaseTask{
+			ProjectID: "test-proj",
+			TaskID:    "task-123",
+		},
+		BlendFile: "scene.blend",
 		CommonTask: domain.CommonTask{
 			StartFrame: 1,
 			EndFrame:   1,
@@ -34,9 +39,6 @@ func TestRenderUseCase_Execute_Success(t *testing.T) {
 				CyclesDevice: domain.DeviceCUDA,
 			},
 		},
-		ProjectID: "test-proj",
-		BlendFile: "scene.blend",
-		TaskID:    "task-123",
 	}
 
 	ctx := context.Background()
@@ -67,7 +69,12 @@ func TestRenderUseCase_Execute_RenderFailure(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	uc := usecase.NewRenderUseCase(mockRenderer, mockRepo, mockProducer, nil, 0)
-	task := domain.RenderTask{ProjectID: "test-proj", TaskID: "task-failed"}
+	task := domain.RenderTask{
+		BaseTask: domain.BaseTask{
+			ProjectID: "test-proj",
+			TaskID:    "task-failed",
+		},
+	}
 	ctx := context.Background()
 
 	// Expectations
@@ -95,8 +102,10 @@ func TestRenderUseCase_Execute_ResultReportFailure(t *testing.T) {
 	uc := usecase.NewRenderUseCase(mockRenderer, mockRepo, mockProducer, nil, 0)
 
 	task := domain.RenderTask{
-		ProjectID: "test-proj",
-		TaskID:    "task-fail-report",
+		BaseTask: domain.BaseTask{
+			ProjectID: "test-proj",
+			TaskID:    "task-fail-report",
+		},
 	}
 
 	ctx := context.Background()
@@ -127,13 +136,15 @@ func TestRenderUseCase_Execute_ValidationFailure(t *testing.T) {
 	uc := usecase.NewRenderUseCase(mockRenderer, mockRepo, mockProducer, allowedDevices, 0)
 
 	task := domain.RenderTask{
+		BaseTask: domain.BaseTask{
+			ProjectID: "test-proj",
+		},
 		CommonTask: domain.CommonTask{
 			Options: domain.RenderOptions{
 				Engine:       domain.EngineCycles,
 				CyclesDevice: domain.DeviceCUDA, // Not allowed
 			},
 		},
-		ProjectID: "test-proj",
 	}
 
 	ctx := context.Background()
@@ -158,8 +169,10 @@ func TestRenderUseCase_Execute_DownloadFailure(t *testing.T) {
 	uc := usecase.NewRenderUseCase(mockRenderer, mockRepo, mockProducer, nil, 0)
 
 	task := domain.RenderTask{
-		ProjectID: "test-proj",
-		TaskID:    "task-123",
+		BaseTask: domain.BaseTask{
+			ProjectID: "test-proj",
+			TaskID:    "task-123",
+		},
 	}
 
 	ctx := context.Background()

@@ -45,6 +45,13 @@ const (
 	StatusFailed    Status = "FAILED"
 )
 
+
+
+type ProjectMetadata struct {
+	FrameStart int `json:"frame_start"`
+	FrameEnd   int `json:"frame_end"`
+}
+
 // RenderOptions contains configuration for a render task.
 type RenderOptions struct {
 	Engine       EngineType   `json:"engine"`
@@ -62,20 +69,32 @@ type CommonTask struct {
 	Options    RenderOptions `json:"options"`
 }
 
-// RenderTask groups all parameters for a single render job coming from Kafka.
+// BaseTask contains common fields for all tasks sent over Kafka.
+type BaseTask struct {
+	ProjectID string `json:"project_id"`
+	TaskID    string `json:"task_id"`
+}
+
+// MetadataTask contains parameters for a metadata extraction job.
+type MetadataTask struct {
+	BaseTask
+	BlendFile string `json:"blend_file"`
+}
+
+// RenderTask groups all parameters for a single render job.
 type RenderTask struct {
+	BaseTask
 	CommonTask `json:",inline"`
-	ProjectID  string `json:"project_id"`
 	BlendFile  string `json:"blend_file"`
-	TaskID     string `json:"task_id"`
 }
 
 // RenderResult is the message workers send back when a task is finished.
 type RenderResult struct {
-	TaskID   string `json:"task_id"`
-	Status   Status `json:"status"`
-	WorkerID string `json:"worker_id"`
-	Error    string `json:"error,omitempty"`
+	TaskID   string           `json:"task_id"`
+	Status   Status           `json:"status"`
+	WorkerID string           `json:"worker_id"`
+	Error    string           `json:"error,omitempty"`
+	Metadata *ProjectMetadata `json:"metadata,omitempty"`
 }
 
 
@@ -86,7 +105,15 @@ type RenderJob struct {
 	OutputPath string
 }
 
-// LogAttrs returns a slice of slog attributes for the Kafka task.
+// LogAttrs returns a slice of slog attributes for the metadata task.
+func (t MetadataTask) LogAttrs() []any {
+	return []any{
+		slog.String("project_id", t.ProjectID),
+		slog.String("blend_file", t.BlendFile),
+	}
+}
+
+// LogAttrs returns a slice of slog attributes for the render task.
 func (t RenderTask) LogAttrs() []any {
 	return []any{
 		slog.String("project_id", t.ProjectID),
