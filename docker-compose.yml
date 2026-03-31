@@ -98,6 +98,24 @@ services:
       minio:
         condition: service_healthy
 
+  stitching-service:
+    build:
+      context: ./services/stitching-service
+      dockerfile: Dockerfile
+    container_name: stitching-service
+    environment:
+      - KAFKA_BROKERS=kafka:29092
+      - S3_ENDPOINT=minio:9000
+      - S3_ACCESS_KEY=admin
+      - S3_SECRET_KEY=password
+      - S3_BUCKET=projects
+      - S3_OUTPUT_BUCKET=results
+    depends_on:
+      kafka:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   minio_data:
