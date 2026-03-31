@@ -79,6 +79,13 @@ func main() {
 
 	router := gin.Default()
 	router.Use(cors.Default()) // Enable CORS
+	
+	// Cluster Statistics
+	clusterUC := usecase.NewClusterUseCase(cfg.Http)
+	clusterHandler := transport_http.NewClusterHandler(clusterUC)
+	clusterHandler.Register(router)
+
+	// Jobs
 	handler := transport_http.NewHandler(jobUseCase, hub)
 	handler.Register(router)
 

@@ -16,7 +16,8 @@ type Config struct {
 }
 
 type HttpServerConfig struct {
-	Address string `yaml:"address" env:"HTTP_ADDRESS" env-default:"0.0.0.0:8081"`
+	Address    string `yaml:"address" env:"HTTP_ADDRESS" env-default:"0.0.0.0:8081"`
+	MaxWorkers int    `yaml:"max_workers" env:"MAX_WORKERS" env-default:"10"`
 }
 
 type DatabaseConfig struct {

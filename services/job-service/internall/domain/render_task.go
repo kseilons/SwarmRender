@@ -98,12 +98,16 @@ type ProjectMetadata struct {
 }
 
 type RenderResult struct {
-	TaskID   string           `json:"task_id"`
-	Status   Status           `json:"status"`
-	WorkerID string           `json:"worker_id"`
+	TaskID     string           `json:"task_id"`
+	Status     Status           `json:"status"`
+	WorkerID   string           `json:"worker_id"`
 	Error      string           `json:"error,omitempty"`
 	Metadata   *ProjectMetadata `json:"metadata,omitempty"`
 	ResultPath string           `json:"result_path,omitempty"`
+}
+
+type ClusterStats struct {
+	TotalWorkers int `json:"total_workers"`
 }
 
 func (j Job) LogAttrs() []any {
