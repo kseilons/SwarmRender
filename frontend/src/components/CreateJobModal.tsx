@@ -22,7 +22,7 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
     s3_path: '',
     frame_start: 1,
     frame_end: 250,
-    worker_count: 5,
+    worker_count: 2,
     options: {
       engine: 'CYCLES',
       use_cpu: false,
@@ -201,10 +201,10 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
                   <div className="form-group">
                     <div className="flex justify-between items-center mb-1">
                        <label className="form-label">{t('create_modal.compute_nodes')}</label>
-                       <span className="text-xs font-mono text-cyan-400">{formData.worker_count} / {stats?.total_workers || '?'} {t('create_modal.slots')}</span>
+                       <span className="text-xs font-mono text-cyan-400">{formData.worker_count} / {stats?.total_workers || '2'} {t('create_modal.slots')}</span>
                     </div>
                     <input 
-                      type="range" min="1" max={stats?.total_workers || 10}
+                      type="range" min="1" max={stats?.total_workers || 2}
                       style={{width: '100%', cursor: 'pointer', accentColor: '#00d2ff'}}
                       value={formData.worker_count}
                       onChange={e => setFormData({...formData, worker_count: parseInt(e.target.value)})}

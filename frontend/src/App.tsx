@@ -70,7 +70,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 max-w-7xl mx-auto w-full">
+      <main className="flex-1 p-6 max-w-7xl mx-auto">
         {children}
       </main>
 
