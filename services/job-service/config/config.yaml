@@ -1,6 +1,7 @@
 env: "local"
 http:
   address: "0.0.0.0:8081"
+  max_workers: 3
 database:
   host: "localhost"
   port: 5431
