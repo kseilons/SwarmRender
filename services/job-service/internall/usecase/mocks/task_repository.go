@@ -32,6 +32,36 @@ func (_m *TaskRepository) CreateTasks(ctx context.Context, tasks []domain.Task) 
 	return r0
 }
 
+// GetJobTasksStatus provides a mock function with given fields: ctx, jobID
+func (_m *TaskRepository) GetJobTasksStatus(ctx context.Context, jobID string) (map[domain.Status]int, error) {
+	ret := _m.Called(ctx, jobID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetJobTasksStatus")
+	}
+
+	var r0 map[domain.Status]int
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (map[domain.Status]int, error)); ok {
+		return rf(ctx, jobID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) map[domain.Status]int); ok {
+		r0 = rf(ctx, jobID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[domain.Status]int)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, jobID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetTasksByJobID provides a mock function with given fields: ctx, jobID
 func (_m *TaskRepository) GetTasksByJobID(ctx context.Context, jobID string) ([]domain.Task, error) {
 	ret := _m.Called(ctx, jobID)
@@ -63,21 +93,31 @@ func (_m *TaskRepository) GetTasksByJobID(ctx context.Context, jobID string) ([]
 }
 
 // UpdateTaskStatus provides a mock function with given fields: ctx, id, status, workerID, resultPath
-func (_m *TaskRepository) UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID string, resultPath string) error {
+func (_m *TaskRepository) UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID string, resultPath string) (string, error) {
 	ret := _m.Called(ctx, id, status, workerID, resultPath)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateTaskStatus")
 	}
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, domain.Status, string, string) error); ok {
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, domain.Status, string, string) (string, error)); ok {
+		return rf(ctx, id, status, workerID, resultPath)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, domain.Status, string, string) string); ok {
 		r0 = rf(ctx, id, status, workerID, resultPath)
 	} else {
-		r0 = ret.Error(0)
+		r0 = ret.Get(0).(string)
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func(context.Context, string, domain.Status, string, string) error); ok {
+		r1 = rf(ctx, id, status, workerID, resultPath)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // NewTaskRepository creates a new instance of TaskRepository. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

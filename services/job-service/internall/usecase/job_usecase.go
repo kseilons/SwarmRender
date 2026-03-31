@@ -23,7 +23,8 @@ type JobRepository interface {
 type TaskRepository interface {
 	CreateTasks(ctx context.Context, tasks []domain.Task) error
 	GetTasksByJobID(ctx context.Context, jobID string) ([]domain.Task, error)
-	UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID string, resultPath string) error
+	UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID string, resultPath string) (string, error)
+	GetJobTasksStatus(ctx context.Context, jobID string) (map[domain.Status]int, error)
 }
 
 type TaskProducer interface {
@@ -209,15 +210,91 @@ func (uc *JobUseCase) HandleMetadataResult(ctx context.Context, jobID string, fr
 func (uc *JobUseCase) HandleTaskResult(ctx context.Context, result domain.RenderResult, logger *slog.Logger) error {
 	logger.Info("handling task result", slog.String("task_id", result.TaskID), slog.String("status", string(result.Status)))
 
-	err := uc.taskRepo.UpdateTaskStatus(ctx, result.TaskID, result.Status, result.WorkerID, result.ResultPath)
-	if err == nil && uc.hub != nil {
+	jobID, err := uc.taskRepo.UpdateTaskStatus(ctx, result.TaskID, result.Status, result.WorkerID, result.ResultPath)
+	if err != nil {
+		logger.Error("failed to update task status", slog.Any("error", err))
+		return err
+	}
+
+	if uc.hub != nil {
 		uc.hub.BroadcastStatusUpdate(map[string]any{
 			"type":    "task_update",
 			"task_id": result.TaskID,
 			"status":  result.Status,
 		})
 	}
-	return err
+
+	// Check job status
+	stats, err := uc.taskRepo.GetJobTasksStatus(ctx, jobID)
+	if err != nil {
+		logger.Error("failed to get job tasks status", slog.String("job_id", jobID), slog.Any("error", err))
+		return nil // Don't fail the whole result handling
+	}
+
+	totalTasks := 0
+	for _, count := range stats {
+		totalTasks += count
+	}
+
+	if stats[domain.StatusCompleted] == totalTasks {
+		logger.Info("all tasks completed, transitioning job to STITCHING", slog.String("job_id", jobID))
+		job, err := uc.jobRepo.GetJob(ctx, jobID)
+		if err != nil {
+			logger.Error("failed to get job for stitching", slog.String("job_id", jobID), slog.Any("error", err))
+			return nil
+		}
+		if err := uc.UpdateJobStatus(ctx, jobID, domain.StatusStitching, logger); err != nil {
+			return nil
+		}
+		return uc.StartStitching(ctx, job, logger)
+	}
+
+	if stats[domain.StatusFailed] == totalTasks {
+		logger.Info("all tasks failed, transitioning job to FAILED", slog.String("job_id", jobID))
+		return uc.UpdateJobStatus(ctx, jobID, domain.StatusFailed, logger)
+	}
+
+	// If some tasks failed but not all, we might want to mark job as FAILED eventually, 
+	// but for now we follow the user's "if all ERROR -> FAILED"
+	if stats[domain.StatusFailed] > 0 && (stats[domain.StatusCompleted]+stats[domain.StatusFailed] == totalTasks) {
+		logger.Info("some tasks failed, transitioning job to FAILED", slog.String("job_id", jobID))
+		return uc.UpdateJobStatus(ctx, jobID, domain.StatusFailed, logger)
+	}
+
+	return nil
+}
+
+func (uc *JobUseCase) StartStitching(ctx context.Context, job domain.Job, logger *slog.Logger) error {
+	task := domain.StitchingTask{
+		BaseTask: domain.BaseTask{
+			ProjectID: job.ID,
+			TaskID:    fmt.Sprintf("stitch-%s", job.ID),
+		},
+		S3Path:     job.S3Path,
+		FrameStart: job.FrameStart,
+		FrameEnd:   job.FrameEnd,
+		Format:     job.Options.Format,
+	}
+
+	topic := uc.kafkaCfg.StitchingTopic
+	if topic == "" {
+		topic = "stitching-tasks"
+	}
+
+	logger.Info("sending stitching task",
+		slog.String("task_id", task.TaskID),
+		slog.String("topic", topic),
+	)
+
+	if err := uc.producer.SendTask(ctx, task.ProjectID, task, topic); err != nil {
+		logger.Error("failed to send stitching task",
+			slog.String("topic", topic),
+			slog.Any("error", err),
+		)
+		return fmt.Errorf("failed to send stitching task: %w", err)
+	}
+
+	return nil
 }
 
 func (uc *JobUseCase) UpdateJobStatus(ctx context.Context, id string, status domain.Status, logger *slog.Logger) error {

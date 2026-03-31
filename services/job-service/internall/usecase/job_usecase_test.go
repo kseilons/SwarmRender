@@ -186,7 +186,9 @@ func TestJobUseCase_ListJobs(t *testing.T) {
 
 func TestJobUseCase_HandleTaskResult(t *testing.T) {
 	mockTaskRepo := mocks.NewTaskRepository(t)
-	uc := usecase.NewJobUseCase(nil, mockTaskRepo, nil, config.KafkaConfig{}, nil)
+	mockJobRepo := mocks.NewJobRepository(t)
+	mockProducer := mocks.NewTaskProducer(t)
+	uc := usecase.NewJobUseCase(mockJobRepo, mockTaskRepo, mockProducer, config.KafkaConfig{StitchingTopic: "stitch"}, nil)
 
 	result := domain.RenderResult{
 		TaskID:     "task-1",
@@ -194,12 +196,48 @@ func TestJobUseCase_HandleTaskResult(t *testing.T) {
 		WorkerID:   "worker-1",
 		ResultPath: "s3://output",
 	}
+	jobID := "job-1"
 	ctx := context.Background()
 
-	mockTaskRepo.On("UpdateTaskStatus", ctx, result.TaskID, result.Status, result.WorkerID, result.ResultPath).Return(nil).Once()
+	t.Run("TaskCompleted_NotAllFinished", func(t *testing.T) {
+		mockTaskRepo.On("UpdateTaskStatus", ctx, result.TaskID, result.Status, result.WorkerID, result.ResultPath).Return(jobID, nil).Once()
+		mockTaskRepo.On("GetJobTasksStatus", ctx, jobID).Return(map[domain.Status]int{
+			domain.StatusCompleted: 1,
+			domain.StatusProcessing: 1,
+		}, nil).Once()
 
-	err := uc.HandleTaskResult(ctx, result, slog.Default())
-	assert.NoError(t, err)
+		err := uc.HandleTaskResult(ctx, result, slog.Default())
+		assert.NoError(t, err)
+	})
+
+	t.Run("AllTasksCompleted_TriggersStitching", func(t *testing.T) {
+		mockTaskRepo.On("UpdateTaskStatus", ctx, result.TaskID, result.Status, result.WorkerID, result.ResultPath).Return(jobID, nil).Once()
+		mockTaskRepo.On("GetJobTasksStatus", ctx, jobID).Return(map[domain.Status]int{
+			domain.StatusCompleted: 2,
+		}, nil).Once()
+		
+		mockJobRepo.On("GetJob", ctx, jobID).Return(domain.Job{ID: jobID, FrameStart: 1, FrameEnd: 10, S3Path: "test.blend"}, nil).Once()
+		mockJobRepo.On("UpdateJobStatus", ctx, jobID, domain.StatusStitching).Return(nil).Once()
+		mockProducer.On("SendTask", ctx, jobID, mock.Anything, "stitch").Return(nil).Once()
+
+		err := uc.HandleTaskResult(ctx, result, slog.Default())
+		assert.NoError(t, err)
+	})
+
+	t.Run("AllTasksFailed_TriggersFailed", func(t *testing.T) {
+		failResult := result
+		failResult.Status = domain.StatusFailed
+		
+		mockTaskRepo.On("UpdateTaskStatus", ctx, failResult.TaskID, failResult.Status, failResult.WorkerID, failResult.ResultPath).Return(jobID, nil).Once()
+		mockTaskRepo.On("GetJobTasksStatus", ctx, jobID).Return(map[domain.Status]int{
+			domain.StatusFailed: 2,
+		}, nil).Once()
+		
+		mockJobRepo.On("UpdateJobStatus", ctx, jobID, domain.StatusFailed).Return(nil).Once()
+
+		err := uc.HandleTaskResult(ctx, failResult, slog.Default())
+		assert.NoError(t, err)
+	})
 }
 
 func TestJobUseCase_UpdateJobStatus_Error(t *testing.T) {

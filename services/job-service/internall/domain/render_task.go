@@ -110,6 +110,24 @@ type ClusterStats struct {
 	TotalWorkers int `json:"total_workers"`
 }
 
+type StitchingTask struct {
+	BaseTask
+	S3Path     string `json:"s3_path"`
+	FrameStart int    `json:"frame_start"`
+	FrameEnd   int    `json:"frame_end"`
+	Format     string `json:"format"`
+}
+
+func (t StitchingTask) LogAttrs() []any {
+	return []any{
+		slog.String("project_id", t.ProjectID),
+		slog.String("task_id", t.TaskID),
+		slog.String("s3_path", t.S3Path),
+		slog.Int("f_start", t.FrameStart),
+		slog.Int("f_end", t.FrameEnd),
+	}
+}
+
 func (j Job) LogAttrs() []any {
 	return []any{
 		slog.String("job_id", j.ID),

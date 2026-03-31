@@ -37,8 +37,9 @@ func (c DatabaseConfig) URL() string {
 type KafkaConfig struct {
 	Brokers       []string `yaml:"brokers" env:"KAFKA_BROKERS" env-default:"localhost:9092"`
 	RenderTopic   string   `yaml:"render_topic" env:"KAFKA_RENDER_TOPIC" env-default:"render-tasks"`
-	MetadataTopic string   `yaml:"metadata_topic" env:"KAFKA_METADATA_TOPIC" env-default:"metadata-tasks"`
-	ResultTopic   string   `yaml:"result_topic" env:"KAFKA_RESULT_TOPIC" env-default:"render-results"`
+	MetadataTopic  string   `yaml:"metadata_topic" env:"KAFKA_METADATA_TOPIC" env-default:"metadata-tasks"`
+	StitchingTopic string   `yaml:"stitching_topic" env:"KAFKA_STITCHING_TOPIC" env-default:"stitching-tasks"`
+	ResultTopic    string   `yaml:"result_topic" env:"KAFKA_RESULT_TOPIC" env-default:"render-results"`
 	ResultGroupID string   `yaml:"result_group_id" env:"KAFKA_RESULT_GROUP_ID" env-default:"job-service-results"`
 }
 
