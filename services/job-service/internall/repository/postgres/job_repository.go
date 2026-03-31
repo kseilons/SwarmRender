@@ -53,6 +53,12 @@ func (r *JobRepository) UpdateJobStatus(ctx context.Context, id string, status d
 	return err
 }
 
+func (r *JobRepository) UpdateJobResult(ctx context.Context, id string, status domain.Status, resultPath string) error {
+	query := `UPDATE jobs SET status = $1, result_path = $2, updated_at = NOW() WHERE id = $3`
+	_, err := r.pool.Exec(ctx, query, string(status), resultPath, id)
+	return err
+}
+
 func (r *JobRepository) UpdateJobMetadata(ctx context.Context, id string, frameStart, frameEnd int) error {
 	query := `UPDATE jobs SET frame_start = $1, frame_end = $2, updated_at = NOW() WHERE id = $3`
 	_, err := r.pool.Exec(ctx, query, frameStart, frameEnd, id)

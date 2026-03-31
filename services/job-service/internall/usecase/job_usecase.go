@@ -16,6 +16,7 @@ type JobRepository interface {
 	CreateJob(ctx context.Context, job domain.Job) error
 	GetJob(ctx context.Context, id string) (domain.Job, error)
 	UpdateJobStatus(ctx context.Context, id string, status domain.Status) error
+	UpdateJobResult(ctx context.Context, id string, status domain.Status, resultPath string) error
 	UpdateJobMetadata(ctx context.Context, id string, frameStart, frameEnd int) error
 	ListJobs(ctx context.Context) ([]domain.Job, error)
 }
@@ -295,6 +296,25 @@ func (uc *JobUseCase) StartStitching(ctx context.Context, job domain.Job, logger
 	}
 
 	return nil
+}
+
+func (uc *JobUseCase) HandleStitchingResult(ctx context.Context, jobID string, result domain.RenderResult, logger *slog.Logger) error {
+	logger.Info("handling stitching result",
+		slog.String("job_id", jobID),
+		slog.String("status", string(result.Status)),
+		slog.String("result_path", result.ResultPath),
+	)
+
+	err := uc.jobRepo.UpdateJobResult(ctx, jobID, result.Status, result.ResultPath)
+	if err == nil && uc.hub != nil {
+		uc.hub.BroadcastStatusUpdate(map[string]any{
+			"type":        "job_update",
+			"job_id":      jobID,
+			"status":      result.Status,
+			"result_path": result.ResultPath,
+		})
+	}
+	return err
 }
 
 func (uc *JobUseCase) UpdateJobStatus(ctx context.Context, id string, status domain.Status, logger *slog.Logger) error {

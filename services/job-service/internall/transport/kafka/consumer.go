@@ -14,6 +14,7 @@ type JobUseCase interface {
 	UpdateJobStatus(ctx context.Context, id string, status domain.Status, logger *slog.Logger) error
 	HandleMetadataResult(ctx context.Context, jobID string, frameStart, frameEnd int, logger *slog.Logger) error
 	HandleTaskResult(ctx context.Context, result domain.RenderResult, logger *slog.Logger) error
+	HandleStitchingResult(ctx context.Context, jobID string, result domain.RenderResult, logger *slog.Logger) error
 }
 
 type Consumer struct {
@@ -62,31 +63,41 @@ func (c *Consumer) Run(ctx context.Context) error {
 
 		c.logger.Info("processing result",
 			slog.String("task_id", result.TaskID),
+			slog.String("type", string(result.Type)),
 			slog.String("status", string(result.Status)),
 			slog.String("worker_id", result.WorkerID),
 		)
 
-		// Example: if status is FAILED, maybe update job status
-		// Here we need logic to find JobID from TaskID or ProjectID
-		// For now, let's assume TaskID has prefix or we have a map
-		// Handle Metadata Result
-		if result.Metadata != nil {
-			c.logger.Info("received metadata, triggering split",
-				slog.Int("frame_start", result.Metadata.FrameStart),
-				slog.Int("frame_end", result.Metadata.FrameEnd),
-			)
-			// Assuming TaskID is "meta-<JobID>"
-			if len(result.TaskID) > 5 {
-				jobID := result.TaskID[5:] // Skip "meta-" prefix
-				if err := c.useCase.HandleMetadataResult(ctx, jobID, result.Metadata.FrameStart, result.Metadata.FrameEnd, c.logger); err != nil {
-					c.logger.Error("failed to handle metadata result", slog.Any("error", err))
-				}
+		switch result.Type {
+		case domain.TypeMetadata:
+			if result.Metadata == nil {
+				c.logger.Error("metadata result missing metadata field", slog.String("task_id", result.TaskID))
+				continue
 			}
-		} else {
-			// Normal Task Result
+			jobID := result.ProjectID
+			if jobID == "" && len(result.TaskID) > 5 {
+				jobID = result.TaskID[5:]
+			}
+			if err := c.useCase.HandleMetadataResult(ctx, jobID, result.Metadata.FrameStart, result.Metadata.FrameEnd, c.logger); err != nil {
+				c.logger.Error("failed to handle metadata result", slog.Any("error", err))
+			}
+
+		case domain.TypeStitching:
+			jobID := result.ProjectID
+			if jobID == "" && len(result.TaskID) > 7 {
+				jobID = result.TaskID[7:]
+			}
+			if err := c.useCase.HandleStitchingResult(ctx, jobID, result, c.logger); err != nil {
+				c.logger.Error("failed to handle stitching result", slog.Any("error", err))
+			}
+
+		case domain.TypeRender:
 			if err := c.useCase.HandleTaskResult(ctx, result, c.logger); err != nil {
 				c.logger.Error("failed to handle task result", slog.Any("error", err))
 			}
+
+		default:
+			c.logger.Warn("received unknown result type", slog.String("type", string(result.Type)))
 		}
 
 		if result.Error != "" {

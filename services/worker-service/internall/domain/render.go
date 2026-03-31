@@ -88,13 +88,24 @@ type RenderTask struct {
 	BlendFile  string `json:"blend_file"`
 }
 
+type TaskType string
+
+const (
+	TypeMetadata  TaskType = "METADATA"
+	TypeRender    TaskType = "RENDER"
+	TypeStitching TaskType = "STITCHING"
+)
+
 // RenderResult is the message workers send back when a task is finished.
 type RenderResult struct {
-	TaskID   string           `json:"task_id"`
-	Status   Status           `json:"status"`
-	WorkerID string           `json:"worker_id"`
-	Error    string           `json:"error,omitempty"`
-	Metadata *ProjectMetadata `json:"metadata,omitempty"`
+	TaskID     string           `json:"task_id"`
+	ProjectID  string           `json:"project_id"`
+	Type       TaskType         `json:"type"`
+	Status     Status           `json:"status"`
+	WorkerID   string           `json:"worker_id"`
+	Error      string           `json:"error,omitempty"`
+	Metadata   *ProjectMetadata `json:"metadata,omitempty"`
+	ResultPath string           `json:"result_path,omitempty"`
 }
 
 

@@ -73,19 +73,21 @@ func (uc *RenderUseCase) Execute(ctx context.Context, logger *slog.Logger, task 
 
 	renderOutput, err := uc.renderer.Render(ctx, logger, job)
 	if err != nil {
-		uc.reportError(ctx, logger, task.TaskID, err)
+		uc.reportError(ctx, logger, task, err)
 		return renderOutput, err
 	}
 
 	if err := uc.uploadResults(ctx, logger, task.ProjectID, outputDir); err != nil {
-		uc.reportError(ctx, logger, task.TaskID, err)
+		uc.reportError(ctx, logger, task, err)
 		return renderOutput, err
 	}
 
 	err = uc.resultProducer.ReportResult(ctx, domain.RenderResult{
-		TaskID:   task.TaskID,
-		Status:   domain.StatusCompleted,
-		WorkerID: os.Getenv("HOSTNAME"),
+		TaskID:    task.TaskID,
+		ProjectID: task.ProjectID,
+		Type:      domain.TypeRender,
+		Status:    domain.StatusCompleted,
+		WorkerID:  os.Getenv("HOSTNAME"),
 	})
 	if err != nil {
 		logger.Error("failed to report result", slog.Any("error", err))
@@ -94,12 +96,14 @@ func (uc *RenderUseCase) Execute(ctx context.Context, logger *slog.Logger, task 
 	return renderOutput, nil
 }
 
-func (uc *RenderUseCase) reportError(ctx context.Context, logger *slog.Logger, taskID string, err error) {
+func (uc *RenderUseCase) reportError(ctx context.Context, logger *slog.Logger, task domain.RenderTask, err error) {
 	reportErr := uc.resultProducer.ReportResult(ctx, domain.RenderResult{
-		TaskID:   taskID,
-		Status:   domain.StatusFailed,
-		WorkerID: os.Getenv("HOSTNAME"),
-		Error:    err.Error(),
+		TaskID:    task.TaskID,
+		ProjectID: task.ProjectID,
+		Type:      domain.TypeRender,
+		Status:    domain.StatusFailed,
+		WorkerID:  os.Getenv("HOSTNAME"),
+		Error:     err.Error(),
 	})
 	if reportErr != nil {
 		logger.Error("failed to report failure result", slog.Any("error", reportErr))

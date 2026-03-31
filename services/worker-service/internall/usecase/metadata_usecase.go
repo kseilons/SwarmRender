@@ -37,7 +37,7 @@ func (uc *MetadataUseCase) Execute(ctx context.Context, logger *slog.Logger, tas
 
 	logger.Info("downloading project for metadata extraction", slog.String("project_id", task.ProjectID))
 	if err := uc.projectRepo.DownloadProject(ctx, task.ProjectID, tempDir); err != nil {
-		uc.reportError(ctx, logger, task.TaskID, err)
+		uc.reportError(ctx, logger, task, err)
 		return fmt.Errorf("failed to download project: %w", err)
 	}
 
@@ -46,7 +46,7 @@ func (uc *MetadataUseCase) Execute(ctx context.Context, logger *slog.Logger, tas
 
 	metadata, err := uc.renderer.GetMetadata(ctx, blendPath)
 	if err != nil {
-		uc.reportError(ctx, logger, task.TaskID, err)
+		uc.reportError(ctx, logger, task, err)
 		return err
 	}
 
@@ -56,10 +56,12 @@ func (uc *MetadataUseCase) Execute(ctx context.Context, logger *slog.Logger, tas
 	)
 
 	err = uc.resultProducer.ReportResult(ctx, domain.RenderResult{
-		TaskID:   task.TaskID,
-		Status:   domain.StatusCompleted,
-		WorkerID: os.Getenv("HOSTNAME"),
-		Metadata: &metadata,
+		TaskID:    task.TaskID,
+		ProjectID: task.ProjectID,
+		Type:      domain.TypeMetadata,
+		Status:    domain.StatusCompleted,
+		WorkerID:  os.Getenv("HOSTNAME"),
+		Metadata:  &metadata,
 	})
 	if err != nil {
 		logger.Error("failed to report metadata result", slog.Any("error", err))
@@ -69,12 +71,14 @@ func (uc *MetadataUseCase) Execute(ctx context.Context, logger *slog.Logger, tas
 	return nil
 }
 
-func (uc *MetadataUseCase) reportError(ctx context.Context, logger *slog.Logger, taskID string, err error) {
+func (uc *MetadataUseCase) reportError(ctx context.Context, logger *slog.Logger, task domain.MetadataTask, err error) {
 	reportErr := uc.resultProducer.ReportResult(ctx, domain.RenderResult{
-		TaskID:   taskID,
-		Status:   domain.StatusFailed,
-		WorkerID: os.Getenv("HOSTNAME"),
-		Error:    err.Error(),
+		TaskID:    task.TaskID,
+		ProjectID: task.ProjectID,
+		Type:      domain.TypeMetadata,
+		Status:    domain.StatusFailed,
+		WorkerID:  os.Getenv("HOSTNAME"),
+		Error:     err.Error(),
 	})
 	if reportErr != nil {
 		logger.Error("failed to report failure result", slog.Any("error", reportErr))

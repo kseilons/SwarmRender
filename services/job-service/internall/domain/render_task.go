@@ -97,8 +97,18 @@ type ProjectMetadata struct {
 	FrameEnd   int `json:"frame_end"`
 }
 
+type TaskType string
+
+const (
+	TypeMetadata  TaskType = "METADATA"
+	TypeRender    TaskType = "RENDER"
+	TypeStitching TaskType = "STITCHING"
+)
+
 type RenderResult struct {
 	TaskID     string           `json:"task_id"`
+	ProjectID  string           `json:"project_id"`
+	Type       TaskType         `json:"type"`
 	Status     Status           `json:"status"`
 	WorkerID   string           `json:"worker_id"`
 	Error      string           `json:"error,omitempty"`

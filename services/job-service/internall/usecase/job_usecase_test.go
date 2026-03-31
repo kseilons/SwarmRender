@@ -192,6 +192,7 @@ func TestJobUseCase_HandleTaskResult(t *testing.T) {
 
 	result := domain.RenderResult{
 		TaskID:     "task-1",
+		Type:       domain.TypeRender,
 		Status:     domain.StatusCompleted,
 		WorkerID:   "worker-1",
 		ResultPath: "s3://output",
@@ -221,6 +222,19 @@ func TestJobUseCase_HandleTaskResult(t *testing.T) {
 		mockProducer.On("SendTask", ctx, jobID, mock.Anything, "stitch").Return(nil).Once()
 
 		err := uc.HandleTaskResult(ctx, result, slog.Default())
+		assert.NoError(t, err)
+	})
+
+	t.Run("StitchingResult_FinalizesJob", func(t *testing.T) {
+		stitchResult := domain.RenderResult{
+			TaskID:     "stitch-job-1",
+			Type:       domain.TypeStitching,
+			Status:     domain.StatusCompleted,
+			ResultPath: "s3://final/video.mp4",
+		}
+		mockJobRepo.On("UpdateJobResult", ctx, jobID, domain.StatusCompleted, stitchResult.ResultPath).Return(nil).Once()
+		
+		err := uc.HandleStitchingResult(ctx, jobID, stitchResult, slog.Default())
 		assert.NoError(t, err)
 	})
 

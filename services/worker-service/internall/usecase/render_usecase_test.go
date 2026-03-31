@@ -50,7 +50,7 @@ func TestRenderUseCase_Execute_Success(t *testing.T) {
 	})).Return([]byte("rendered-data"), nil)
 	mockRepo.On("UploadResult", ctx, "test-proj", mock.AnythingOfType("string")).Return(nil)
 	mockProducer.On("ReportResult", ctx, mock.MatchedBy(func(res domain.RenderResult) bool {
-		return res.TaskID == "task-123" && res.Status == domain.StatusCompleted
+		return res.TaskID == "task-123" && res.ProjectID == "test-proj" && res.Type == domain.TypeRender && res.Status == domain.StatusCompleted
 	})).Return(nil)
 
 	// Execute
@@ -81,7 +81,7 @@ func TestRenderUseCase_Execute_RenderFailure(t *testing.T) {
 	mockRepo.On("DownloadProject", ctx, "test-proj", mock.Anything).Return(nil)
 	mockRenderer.On("Render", ctx, logger, mock.Anything).Return(nil, errors.New("blender crash"))
 	mockProducer.On("ReportResult", ctx, mock.MatchedBy(func(res domain.RenderResult) bool {
-		return res.TaskID == "task-failed" && res.Status == domain.StatusFailed && res.Error == "blender crash"
+		return res.TaskID == "task-failed" && res.ProjectID == "test-proj" && res.Type == domain.TypeRender && res.Status == domain.StatusFailed && res.Error == "blender crash"
 	})).Return(nil)
 
 	// Execute
