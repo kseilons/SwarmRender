@@ -206,6 +206,103 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
                     />
                   </div>
 
+                  <div className="pt-4 border-t border-white/5">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4">{t('create_modal.advanced_options')}</h3>
+                    
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="form-group">
+                        <label className="form-label">{t('create_modal.field_engine')}</label>
+                        <select 
+                          className="form-input"
+                          value={formData.options.engine}
+                          onChange={e => setFormData({
+                            ...formData, 
+                            options: { ...formData.options, engine: e.target.value }
+                          })}
+                        >
+                          <option value="CYCLES">CYCLES</option>
+                          <option value="EEVEE">EEVEE</option>
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                         <label className="form-label">{t('create_modal.field_format')}</label>
+                         <select 
+                          className="form-input"
+                          value={formData.options.format}
+                          onChange={e => setFormData({
+                            ...formData, 
+                            options: { ...formData.options, format: e.target.value }
+                          })}
+                        >
+                          <option value="PNG">PNG</option>
+                          <option value="JPEG">JPEG</option>
+                          <option value="EXR">OPEN_EXR</option>
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">{t('create_modal.field_scene')}</label>
+                        <input 
+                          type="text"
+                          className="form-input"
+                          value={formData.options.scene}
+                          onChange={e => setFormData({
+                            ...formData, 
+                            options: { ...formData.options, scene: e.target.value }
+                          })}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">{t('create_modal.field_threads')}</label>
+                        <input 
+                          type="number"
+                          className="form-input"
+                          value={formData.options.threads}
+                          onChange={e => setFormData({
+                            ...formData, 
+                            options: { ...formData.options, threads: parseInt(e.target.value) }
+                          })}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">{t('create_modal.field_use_cpu')}</label>
+                        <div className="flex items-center gap-2 mt-2">
+                          <input 
+                            type="checkbox"
+                            id="use_cpu"
+                            checked={formData.options.use_cpu}
+                            onChange={e => setFormData({
+                              ...formData, 
+                              options: { ...formData.options, use_cpu: e.target.checked }
+                            })}
+                          />
+                          <label htmlFor="use_cpu" className="text-sm cursor-pointer">{t('create_modal.field_use_cpu')}</label>
+                        </div>
+                      </div>
+
+                      {formData.options.engine === 'CYCLES' && !formData.options.use_cpu && (
+                        <div className="form-group">
+                          <label className="form-label">{t('create_modal.field_device')}</label>
+                          <select 
+                            className="form-input"
+                            value={formData.options.cycles_device}
+                            onChange={e => setFormData({
+                              ...formData, 
+                              options: { ...formData.options, cycles_device: e.target.value }
+                            })}
+                          >
+                            <option value="CUDA">CUDA</option>
+                            <option value="OPTIX">OPTIX</option>
+                            <option value="OPENCL">OPENCL</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="flex gap-3 pt-6">
                     <button 
                       type="button" onClick={() => setStep(1)}

@@ -49,7 +49,14 @@
       "initialize": "Запустить рендеринг",
       "step_3_title": "Проект успешно запущен",
       "notifying_workers": "Воркеры получают уведомления о новой задаче.",
-      "pack_textures_info": "Рендеринг будет распределен по узлам кластера. Убедитесь, что все текстуры упакованы в .blend файл (File > External Data > Pack All Into .blend)."
+      "pack_textures_info": "Рендеринг будет распределен по узлам кластера. Убедитесь, что все текстуры упакованы в .blend файл (File > External Data > Pack All Into .blend).",
+      "advanced_options": "Расширенные настройки",
+      "field_engine": "Движок рендера",
+      "field_scene": "Название сцены",
+      "field_format": "Формат вывода",
+      "field_use_cpu": "Использовать CPU",
+      "field_device": "Устройство Cycles",
+      "field_threads": "Потоки (0 - авто)"
     },
     "status": {
       "CREATED": "СОЗДАН",
@@ -110,7 +117,14 @@
       "initialize": "Initialize Render Job",
       "step_3_title": "Successfully Dispatched",
       "notifying_workers": "Workers are being notified about the new job.",
-      "pack_textures_info": "Rendering will be distributed across the cluster nodes. Ensure your .blend file has all textures packed (File > External Data > Pack All Into .blend)."
+      "pack_textures_info": "Rendering will be distributed across the cluster nodes. Ensure your .blend file has all textures packed (File > External Data > Pack All Into .blend).",
+      "advanced_options": "Advanced Options",
+      "field_engine": "Render Engine",
+      "field_scene": "Scene Name",
+      "field_format": "Output Format",
+      "field_use_cpu": "Use CPU Rendering",
+      "field_device": "Cycles Device",
+      "field_threads": "Threads (0 for auto)"
     },
     "status": {
       "CREATED": "CREATED",
