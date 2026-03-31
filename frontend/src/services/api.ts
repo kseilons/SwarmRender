@@ -12,6 +12,10 @@ export interface RenderOptions {
   background: boolean;
 }
 
+export interface ClusterStats {
+  total_workers: number;
+}
+
 export type Status = 'CREATED' | 'PENDING_METADATA' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'STITCHING';
 
 export interface Job {
@@ -80,6 +84,10 @@ export const jobService = {
     // Stubbed as requested, will move to api-gateway
     console.log('Stub: Getting upload URL for', filename);
     return `http://localhost:9000/bucket/${filename}?stub=true`;
+  },
+  getStats: async (): Promise<ClusterStats> => {
+    const { data } = await api.get<ClusterStats>('/stats');
+    return data;
   }
 };
 

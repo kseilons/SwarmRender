@@ -2,14 +2,13 @@ import React, { useState } from 'react';
 import { X, Upload, Check, Loader2, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { jobService, CreateJobRequest } from '../services/api';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useTranslation } from '../context/LanguageContext';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
 }
-
-import { useTranslation } from '../context/LanguageContext';
 
 const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const queryClient = useQueryClient();
@@ -33,6 +32,12 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
       scene: 'Scene',
       background: true
     }
+  });
+
+  const { data: stats } = useQuery({
+    queryKey: ['clusterStats'],
+    queryFn: jobService.getStats,
+    enabled: isOpen
   });
 
   const mutation = useMutation({
@@ -196,10 +201,10 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
                   <div className="form-group">
                     <div className="flex justify-between items-center mb-1">
                        <label className="form-label">{t('create_modal.compute_nodes')}</label>
-                       <span className="text-xs font-mono text-cyan-400">{formData.worker_count} {t('create_modal.slots')}</span>
+                       <span className="text-xs font-mono text-cyan-400">{formData.worker_count} / {stats?.total_workers || '?'} {t('create_modal.slots')}</span>
                     </div>
                     <input 
-                      type="range" min="1" max="20"
+                      type="range" min="1" max={stats?.total_workers || 10}
                       style={{width: '100%', cursor: 'pointer', accentColor: '#00d2ff'}}
                       value={formData.worker_count}
                       onChange={e => setFormData({...formData, worker_count: parseInt(e.target.value)})}
@@ -259,12 +264,18 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
                         <input 
                           type="number"
                           className="form-input"
+                          min="0" max="12"
                           value={formData.options.threads}
-                          onChange={e => setFormData({
-                            ...formData, 
-                            options: { ...formData.options, threads: parseInt(e.target.value) }
-                          })}
+                          onChange={e => {
+                            let val = parseInt(e.target.value) || 0;
+                            if (val > 12) val = 12;
+                            setFormData({
+                              ...formData, 
+                              options: { ...formData.options, threads: val }
+                            });
+                          }}
                         />
+                        <p className="text-[10px] text-white/20 mt-1 uppercase tracking-wider">Max 12 threads</p>
                       </div>
 
                       <div className="form-group">
