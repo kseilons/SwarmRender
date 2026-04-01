@@ -20,6 +20,7 @@ type JobRepository interface {
 	UpdateJobResult(ctx context.Context, id string, status domain.Status, resultPath *string) error
 	UpdateJobPreview(ctx context.Context, id string, previewPath string) error
 	UpdateJobMetadata(ctx context.Context, id string, frameStart, frameEnd int) error
+	UpdateJobProgress(ctx context.Context, id string, completedFrames int) error
 	ListJobs(ctx context.Context) ([]domain.Job, error)
 }
 
@@ -28,6 +29,7 @@ type TaskRepository interface {
 	GetTask(ctx context.Context, id string) (domain.Task, error)
 	GetTasksByJobID(ctx context.Context, jobID string) ([]domain.Task, error)
 	UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID *string, resultPath *string) (string, error)
+	UpdateTaskProgress(ctx context.Context, id string, currentFrame int) (string, error)
 	GetJobTasksStatus(ctx context.Context, jobID string) (map[domain.Status]int, error)
 	ResetFailedTasks(ctx context.Context, jobID string) ([]domain.Task, error)
 }
@@ -230,6 +232,13 @@ func (uc *JobUseCase) HandleTaskResult(ctx context.Context, result domain.Render
 		return err
 	}
 
+	if result.Status == domain.StatusCompleted {
+		task, err := uc.taskRepo.GetTask(ctx, result.TaskID)
+		if err == nil {
+			uc.HandleTaskProgress(ctx, result.TaskID, task.FrameEnd, logger)
+		}
+	}
+
 	if uc.hub != nil {
 		uc.hub.BroadcastStatusUpdate(map[string]any{
 			"type":    "task_update",
@@ -339,6 +348,45 @@ func (uc *JobUseCase) StartStitching(ctx context.Context, job domain.Job, logger
 	return nil
 }
 
+func (uc *JobUseCase) HandleTaskProgress(ctx context.Context, taskID string, currentFrame int, logger *slog.Logger) error {
+	jobID, err := uc.taskRepo.UpdateTaskProgress(ctx, taskID, currentFrame)
+	if err != nil {
+		return err
+	}
+
+	if uc.hub != nil {
+		uc.hub.BroadcastStatusUpdate(map[string]any{
+			"type":          "task_progress",
+			"task_id":       taskID,
+			"current_frame": currentFrame,
+		})
+	}
+
+	// Calculate and update job progress
+	tasks, err := uc.taskRepo.GetTasksByJobID(ctx, jobID)
+	if err == nil {
+		totalCompleted := 0
+		for _, t := range tasks {
+			if t.Status == domain.StatusCompleted {
+				totalCompleted += (t.FrameEnd - t.FrameStart + 1)
+			} else if t.CurrentFrame >= t.FrameStart {
+				totalCompleted += (t.CurrentFrame - t.FrameStart + 1)
+			}
+		}
+		_ = uc.jobRepo.UpdateJobProgress(ctx, jobID, totalCompleted)
+
+		if uc.hub != nil {
+			uc.hub.BroadcastStatusUpdate(map[string]any{
+				"type":             "job_progress",
+				"job_id":           jobID,
+				"completed_frames": totalCompleted,
+			})
+		}
+	}
+
+	return nil
+}
+
 func (uc *JobUseCase) HandleStitchingResult(ctx context.Context, result domain.RenderResult, logger *slog.Logger) error {
 	logger.Info("handling stitching result",
 		slog.String("task_id", result.TaskID),
@@ -438,6 +486,9 @@ func (uc *JobUseCase) GetJob(ctx context.Context, id string) (domain.JobResponse
 }
 
 func (uc *JobUseCase) generatePreview(ctx context.Context, job domain.Job, task domain.Task, logger *slog.Logger) {
+	if uc.minioRepo == nil {
+		return
+	}
 	projectID := extractProjectID(job.S3Path)
 	// Example: projectID_results/Scene_0001.png
 	scene := "Scene"

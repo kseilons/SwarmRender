@@ -58,9 +58,10 @@ type Job struct {
 	Status      Status        `json:"status"`
 	ResultPath  *string       `json:"result_path,omitempty"`
 	Options     RenderOptions `json:"options"`
-	PreviewURL  *string       `json:"preview_url,omitempty"`
-	CreatedAt   time.Time     `json:"created_at"`
-	UpdatedAt   time.Time     `json:"updated_at"`
+	PreviewURL      *string       `json:"preview_url,omitempty"`
+	CompletedFrames int           `json:"completed_frames"`
+	CreatedAt       time.Time     `json:"created_at"`
+	UpdatedAt       time.Time     `json:"updated_at"`
 }
 
 type Task struct {
@@ -71,10 +72,11 @@ type Task struct {
 	FrameEnd   int       `json:"frame_end"`
 	Status     Status    `json:"status"`
 	WorkerID   *string   `json:"worker_id,omitempty"`
-	ResultPath *string   `json:"result_path,omitempty"`
-	RetryCount int       `json:"retry_count"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ResultPath   *string   `json:"result_path,omitempty"`
+	RetryCount   int       `json:"retry_count"`
+	CurrentFrame int       `json:"current_frame"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 type CreateJobRequest struct {
@@ -113,7 +115,8 @@ type RenderResult struct {
 	WorkerID   *string          `json:"worker_id"`
 	Error      string           `json:"error,omitempty"`
 	Metadata   *ProjectMetadata `json:"metadata,omitempty"`
-	ResultPath *string          `json:"result_path,omitempty"`
+	ResultPath   *string          `json:"result_path,omitempty"`
+	CurrentFrame int              `json:"current_frame,omitempty"`
 }
 
 type ClusterStats struct {

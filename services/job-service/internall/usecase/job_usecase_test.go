@@ -204,6 +204,13 @@ func TestJobUseCase_HandleTaskResult(t *testing.T) {
 	jobID := "job-1"
 	ctx := context.Background()
 
+	// Common expectations for progress tracking and preview generation
+	mockJobRepo.On("GetJob", mock.Anything, jobID).Return(domain.Job{ID: jobID}, nil).Maybe()
+	mockTaskRepo.On("GetTask", mock.Anything, mock.Anything).Return(domain.Task{ID: "task-1", JobID: jobID, FrameStart: 1, FrameEnd: 10}, nil).Maybe()
+	mockTaskRepo.On("UpdateTaskProgress", mock.Anything, mock.Anything, mock.Anything).Return(jobID, nil).Maybe()
+	mockTaskRepo.On("GetTasksByJobID", mock.Anything, jobID).Return([]domain.Task{{ID: "task-1", Status: domain.StatusCompleted, FrameStart: 1, FrameEnd: 10}}, nil).Maybe()
+	mockJobRepo.On("UpdateJobProgress", mock.Anything, jobID, mock.Anything).Return(nil).Maybe()
+
 	t.Run("TaskCompleted_NotAllFinished", func(t *testing.T) {
 		mockTaskRepo.On("UpdateTaskStatus", ctx, result.TaskID, result.Status, result.WorkerID, result.ResultPath).Return(jobID, nil).Once()
 		mockTaskRepo.On("GetJobTasksStatus", ctx, jobID).Return(map[domain.Status]int{

@@ -150,6 +150,34 @@ func (_m *TaskRepository) ResetFailedTasks(ctx context.Context, jobID string) ([
 	return r0, r1
 }
 
+// UpdateTaskProgress provides a mock function with given fields: ctx, id, currentFrame
+func (_m *TaskRepository) UpdateTaskProgress(ctx context.Context, id string, currentFrame int) (string, error) {
+	ret := _m.Called(ctx, id, currentFrame)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateTaskProgress")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, int) (string, error)); ok {
+		return rf(ctx, id, currentFrame)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, int) string); ok {
+		r0 = rf(ctx, id, currentFrame)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, int) error); ok {
+		r1 = rf(ctx, id, currentFrame)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // UpdateTaskStatus provides a mock function with given fields: ctx, id, status, workerID, resultPath
 func (_m *TaskRepository) UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID *string, resultPath *string) (string, error) {
 	ret := _m.Called(ctx, id, status, workerID, resultPath)

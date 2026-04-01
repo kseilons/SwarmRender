@@ -14,6 +14,7 @@ type JobUseCase interface {
 	UpdateJobStatus(ctx context.Context, id string, status domain.Status, logger *slog.Logger) error
 	HandleMetadataResult(ctx context.Context, jobID string, frameStart, frameEnd int, logger *slog.Logger) error
 	HandleTaskResult(ctx context.Context, result domain.RenderResult, logger *slog.Logger) error
+	HandleTaskProgress(ctx context.Context, taskID string, currentFrame int, logger *slog.Logger) error
 	HandleStitchingResult(ctx context.Context, result domain.RenderResult, logger *slog.Logger) error
 }
 
@@ -67,6 +68,13 @@ func (c *Consumer) Run(ctx context.Context) error {
 			slog.String("status", string(result.Status)),
 			slog.Any("worker_id", result.WorkerID),
 		)
+
+		if result.Status == domain.StatusProcessing {
+			if err := c.useCase.HandleTaskProgress(ctx, result.TaskID, result.CurrentFrame, c.logger); err != nil {
+				c.logger.Error("failed to handle task progress", slog.Any("error", err))
+			}
+			continue
+		}
 
 		switch result.Type {
 		case domain.TypeMetadata:

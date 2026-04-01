@@ -162,6 +162,24 @@ func (_m *JobRepository) UpdateJobStatus(ctx context.Context, id string, status 
 	return r0
 }
 
+// UpdateJobProgress provides a mock function with given fields: ctx, id, completedFrames
+func (_m *JobRepository) UpdateJobProgress(ctx context.Context, id string, completedFrames int) error {
+	ret := _m.Called(ctx, id, completedFrames)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateJobProgress")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, int) error); ok {
+		r0 = rf(ctx, id, completedFrames)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // NewJobRepository creates a new instance of JobRepository. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewJobRepository(t interface {

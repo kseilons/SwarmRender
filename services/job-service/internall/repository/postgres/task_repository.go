@@ -20,11 +20,11 @@ func NewTaskRepository(pool *pgxpool.Pool) *TaskRepository {
 func (r *TaskRepository) CreateTasks(ctx context.Context, tasks []domain.Task) error {
 	batch := &pgx.Batch{}
 	query := `
-		INSERT INTO tasks (id, job_id, type, frame_start, frame_end, status, result_path, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		INSERT INTO tasks (id, job_id, type, frame_start, frame_end, status, result_path, current_frame, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`
 	for _, t := range tasks {
-		batch.Queue(query, t.ID, t.JobID, string(t.Type), t.FrameStart, t.FrameEnd, t.Status, t.ResultPath, t.CreatedAt, t.UpdatedAt)
+		batch.Queue(query, t.ID, t.JobID, string(t.Type), t.FrameStart, t.FrameEnd, t.Status, t.ResultPath, t.CurrentFrame, t.CreatedAt, t.UpdatedAt)
 	}
 
 	results := r.pool.SendBatch(ctx, batch)
@@ -40,9 +40,9 @@ func (r *TaskRepository) CreateTasks(ctx context.Context, tasks []domain.Task) e
 }
 
 func (r *TaskRepository) GetTask(ctx context.Context, id string) (domain.Task, error) {
-	query := `SELECT id, job_id, type, frame_start, frame_end, status, worker_id, result_path, retry_count, created_at, updated_at FROM tasks WHERE id = $1`
+	query := `SELECT id, job_id, type, frame_start, frame_end, status, worker_id, result_path, retry_count, current_frame, created_at, updated_at FROM tasks WHERE id = $1`
 	var t domain.Task
-	err := r.pool.QueryRow(ctx, query, id).Scan(&t.ID, &t.JobID, &t.Type, &t.FrameStart, &t.FrameEnd, &t.Status, &t.WorkerID, &t.ResultPath, &t.RetryCount, &t.CreatedAt, &t.UpdatedAt)
+	err := r.pool.QueryRow(ctx, query, id).Scan(&t.ID, &t.JobID, &t.Type, &t.FrameStart, &t.FrameEnd, &t.Status, &t.WorkerID, &t.ResultPath, &t.RetryCount, &t.CurrentFrame, &t.CreatedAt, &t.UpdatedAt)
 	if err != nil {
 		return domain.Task{}, fmt.Errorf("failed to get task: %w", err)
 	}
@@ -50,7 +50,7 @@ func (r *TaskRepository) GetTask(ctx context.Context, id string) (domain.Task, e
 }
 
 func (r *TaskRepository) GetTasksByJobID(ctx context.Context, jobID string) ([]domain.Task, error) {
-	query := `SELECT id, job_id, type, frame_start, frame_end, status, worker_id, result_path, retry_count, created_at, updated_at FROM tasks WHERE job_id = $1`
+	query := `SELECT id, job_id, type, frame_start, frame_end, status, worker_id, result_path, retry_count, current_frame, created_at, updated_at FROM tasks WHERE job_id = $1`
 	rows, err := r.pool.Query(ctx, query, jobID)
 	if err != nil {
 		return nil, err
@@ -60,13 +60,20 @@ func (r *TaskRepository) GetTasksByJobID(ctx context.Context, jobID string) ([]d
 	var tasks []domain.Task
 	for rows.Next() {
 		var t domain.Task
-		err := rows.Scan(&t.ID, &t.JobID, &t.Type, &t.FrameStart, &t.FrameEnd, &t.Status, &t.WorkerID, &t.ResultPath, &t.RetryCount, &t.CreatedAt, &t.UpdatedAt)
+		err := rows.Scan(&t.ID, &t.JobID, &t.Type, &t.FrameStart, &t.FrameEnd, &t.Status, &t.WorkerID, &t.ResultPath, &t.RetryCount, &t.CurrentFrame, &t.CreatedAt, &t.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
 		tasks = append(tasks, t)
 	}
 	return tasks, nil
+}
+
+func (r *TaskRepository) UpdateTaskProgress(ctx context.Context, id string, currentFrame int) (string, error) {
+	query := `UPDATE tasks SET current_frame = $1, updated_at = NOW() WHERE id = $2 RETURNING job_id`
+	var jobID string
+	err := r.pool.QueryRow(ctx, query, currentFrame, id).Scan(&jobID)
+	return jobID, err
 }
 
 func (r *TaskRepository) UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID *string, resultPath *string) (string, error) {
@@ -100,7 +107,7 @@ func (r *TaskRepository) ResetFailedTasks(ctx context.Context, jobID string) ([]
 		UPDATE tasks 
 		SET status = 'CREATED', worker_id = NULL, result_path = NULL, retry_count = retry_count + 1, updated_at = NOW() 
 		WHERE job_id = $1 AND status = 'FAILED'
-		RETURNING id, job_id, type, frame_start, frame_end, status, worker_id, result_path, retry_count, created_at, updated_at
+		RETURNING id, job_id, type, frame_start, frame_end, status, worker_id, result_path, retry_count, current_frame, created_at, updated_at
 	`
 	rows, err := r.pool.Query(ctx, query, jobID)
 	if err != nil {
@@ -111,7 +118,7 @@ func (r *TaskRepository) ResetFailedTasks(ctx context.Context, jobID string) ([]
 	var tasks []domain.Task
 	for rows.Next() {
 		var t domain.Task
-		err := rows.Scan(&t.ID, &t.JobID, &t.Type, &t.FrameStart, &t.FrameEnd, &t.Status, &t.WorkerID, &t.ResultPath, &t.RetryCount, &t.CreatedAt, &t.UpdatedAt)
+		err := rows.Scan(&t.ID, &t.JobID, &t.Type, &t.FrameStart, &t.FrameEnd, &t.Status, &t.WorkerID, &t.ResultPath, &t.RetryCount, &t.CurrentFrame, &t.CreatedAt, &t.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
