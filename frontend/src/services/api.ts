@@ -60,6 +60,11 @@ export interface CreateJobRequest {
   preview_url?: string;
 }
 
+export interface UploadUrlResponse {
+  upload_url: string;
+  s3_path: string;
+}
+
 const api = axios.create({
   baseURL: API_BASE,
   headers: {
@@ -80,10 +85,18 @@ export const jobService = {
     const { data } = await api.post<Job>('/jobs', req);
     return data;
   },
-  getUploadUrl: async (filename: string): Promise<string> => {
-    // Stubbed as requested, will move to api-gateway
-    console.log('Stub: Getting upload URL for', filename);
-    return `http://localhost:9000/bucket/${filename}?stub=true`;
+  getUploadUrl: async (filename: string): Promise<UploadUrlResponse> => {
+    const { data } = await api.get<UploadUrlResponse>(`/jobs/upload-url`, {
+      params: { filename }
+    });
+    return data;
+  },
+  uploadFileToS3: async (url: string, file: File): Promise<void> => {
+    await axios.put(url, file, {
+      headers: {
+        'Content-Type': file.type || 'application/octet-stream',
+      },
+    });
   },
   getStats: async (): Promise<ClusterStats> => {
     const { data } = await api.get<ClusterStats>('/stats');

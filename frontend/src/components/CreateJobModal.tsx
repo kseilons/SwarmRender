@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Upload, Check, Loader2, Info } from 'lucide-react';
+import { X, Upload, Check, Loader2, Info, Folder } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { jobService, CreateJobRequest } from '../services/api';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
@@ -16,6 +16,8 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [step, setStep] = useState(1);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [fileCount, setFileCount] = useState(0);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState<CreateJobRequest>({
     name: '',
@@ -53,21 +55,66 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
     }
   });
 
-  const handleUpload = () => {
+  const onFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
     setIsUploading(true);
     setUploadProgress(0);
-    
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsUploading(false);
-          setFormData({ ...formData, s3_path: 'uploads/project_' + Date.now() + '.blend' });
-          return 100;
+    setFileCount(files.length);
+
+    let uploadedCount = 0;
+    let mainBlendFile = '';
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const relativePath = file.webkitRelativePath || file.name;
+        
+        // Skip some system files
+        if (relativePath.includes('.DS_Store') || relativePath.includes('__MACOSX')) {
+          uploadedCount++;
+          continue;
         }
-        return prev + 5;
-      });
-    }, 100);
+
+        // Try to find the main .blend file
+        // Prefer one in the root, or just the first .blend found
+        if (file.name.endsWith('.blend')) {
+          if (!mainBlendFile || !relativePath.includes('/')) {
+            mainBlendFile = relativePath;
+          }
+        }
+
+        // 1. Get signed URL
+        const { upload_url, s3_path } = await jobService.getUploadUrl(relativePath);
+        
+        // 2. Upload to S3
+        await jobService.uploadFileToS3(upload_url, file);
+
+        uploadedCount++;
+        setUploadProgress(Math.round((uploadedCount / files.length) * 100));
+        
+        // If it's the main blend file, we eventually use its specific s3_path suffix 
+        // to tell the backend which file to open
+        if (relativePath === mainBlendFile) {
+          setFormData(prev => ({ ...prev, s3_path }));
+        }
+      }
+
+      // If no main file detected or multiple, the last 's3_path' updated in the loop 
+      // will be the one. But ideally we want the .blend file's path.
+      // The backend 's3_path' from /upload-url already includes the project-specific uuid prefix.
+      
+    } catch (error) {
+      console.error('Upload failed:', error);
+      alert('Upload failed. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -125,14 +172,21 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
                   <div className="form-group">
                     <label className="form-label">{t('create_modal.field_file')}</label>
                     <div 
-                      onClick={handleUpload}
+                      onClick={handleUploadClick}
                       className="upload-area"
                       style={formData.s3_path ? {borderColor: 'rgba(16, 185, 129, 0.5)', background: 'rgba(16, 185, 129, 0.05)'} : {}}
                     >
+                      <input 
+                        type="file" 
+                        ref={fileInputRef}
+                        className="hidden"
+                        onChange={onFileSelect}
+                        {...({ webkitdirectory: "", directory: "" } as any)}
+                      />
                       {isUploading ? (
                         <div className="w-full">
                            <div className="flex justify-between text-xs font-mono mb-1">
-                              <span className="text-cyan-400">{t('create_modal.uploading')}</span>
+                              <span className="text-cyan-400">Uploading {fileCount} files...</span>
                               <span className="text-white/40">{uploadProgress}%</span>
                            </div>
                            <div className="progress-bar">
@@ -143,13 +197,16 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
                         <>
                           <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-400" style={{background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', width: '48px', height: '48px', borderRadius: '50%'}}><Check size={24} /></div>
                           <span className="text-sm font-medium" style={{color: '#10b981'}}>{t('create_modal.upload_complete')}</span>
-                          <span className="text-xs text-white/30 truncate w-full text-center font-mono">{formData.s3_path}</span>
+                          <span className="text-xs text-white/30 truncate w-full text-center font-mono">{formData.s3_path.split('/').pop()}</span>
                         </>
                       ) : (
                         <>
-                          <Upload size={32} style={{opacity: 0.2}} />
+                          <div className="flex gap-4 mb-2">
+                             <Upload size={24} style={{opacity: 0.3}} />
+                             <Folder size={24} style={{opacity: 0.3}} />
+                          </div>
                           <span className="text-sm font-medium">{t('create_modal.upload_instruction')}</span>
-                          <span className="text-xs text-white/20 uppercase tracking-tighter">{t('create_modal.upload_limit')}</span>
+                          <span className="text-[10px] text-white/20 uppercase tracking-tighter mt-1">Single folder with all project assets</span>
                         </>
                       )}
                     </div>
