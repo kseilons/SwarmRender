@@ -36,6 +36,7 @@ export interface Job {
 export interface Task {
   id: string;
   job_id: string;
+  type: string;
   frame_start: number;
   frame_end: number;
   status: Status;

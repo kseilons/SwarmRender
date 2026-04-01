@@ -12,7 +12,11 @@
       "rendering_preview": "Генерация превью...",
       "workers": "Воркеров",
       "frames": "Кадры",
-      "retry": "Повторить попытку"
+      "retry": "Повторить попытку",
+      "retry_job": "Перезапустить",
+      "node_active": "Узел активен",
+      "start": "Начало",
+      "end": "Конец"
     },
     "jobs_page": {
       "title": "Дашборд рендеринга",
@@ -22,13 +26,17 @@
       "engine": "Движок рендера",
       "frame_range": "Диапазон кадров",
       "allocation": "Выделение узлов",
+      "scene_name": "Название сцены",
       "cluster_title": "Кластер активного рендеринга",
+      "cluster_desc": "Мониторинг вычислительных узлов и текущей нагрузки кластера.",
       "th_node": "Узел / ID задачи",
+      "th_type": "Тип задачи",
       "th_frames": "Сегмент кадров",
       "th_state": "Состояние",
       "th_worker": "Назначенный воркер",
       "th_sync": "Синхронизация",
       "progress_trace": "Прогресс выполнения",
+      "realtime_cluster_metrics": "Метрики кластера в реальном времени",
       "active_graph": "График активной производительности"
     },
     "create_modal": {
@@ -82,7 +90,11 @@
       "rendering_preview": "Rendering preview...",
       "workers": "Workers",
       "frames": "Frames",
-      "retry": "Retry Task"
+      "retry": "Retry Task",
+      "retry_job": "Retry",
+      "node_active": "Node active",
+      "start": "Start",
+      "end": "End"
     },
     "jobs_page": {
       "title": "Render Dashboard",
@@ -92,13 +104,17 @@
       "engine": "Render Engine",
       "frame_range": "Frame Range",
       "allocation": "Worker Allocation",
+      "scene_name": "Scene Name",
       "cluster_title": "Active Rendering Cluster",
+      "cluster_desc": "Monitor individual rendering nodes and their current workload.",
       "th_node": "Node / Task ID",
+      "th_type": "Task Type",
       "th_frames": "Frame Segment",
       "th_state": "State",
       "th_worker": "Worker Assignment",
       "th_sync": "Synchronization",
       "progress_trace": "Progress Trace",
+      "realtime_cluster_metrics": "Realtime Cluster Metrics",
       "active_graph": "Active Performance Graph"
     },
     "create_modal": {

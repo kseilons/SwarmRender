@@ -65,7 +65,7 @@ func (c *Consumer) Run(ctx context.Context) error {
 			slog.String("task_id", result.TaskID),
 			slog.String("type", string(result.Type)),
 			slog.String("status", string(result.Status)),
-			slog.String("worker_id", result.WorkerID),
+			slog.Any("worker_id", result.WorkerID),
 		)
 
 		switch result.Type {

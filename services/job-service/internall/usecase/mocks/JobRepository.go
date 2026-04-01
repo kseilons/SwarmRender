@@ -109,7 +109,7 @@ func (_m *JobRepository) UpdateJobMetadata(ctx context.Context, id string, frame
 }
 
 // UpdateJobResult provides a mock function with given fields: ctx, id, status, resultPath
-func (_m *JobRepository) UpdateJobResult(ctx context.Context, id string, status domain.Status, resultPath string) error {
+func (_m *JobRepository) UpdateJobResult(ctx context.Context, id string, status domain.Status, resultPath *string) error {
 	ret := _m.Called(ctx, id, status, resultPath)
 
 	if len(ret) == 0 {
@@ -117,7 +117,7 @@ func (_m *JobRepository) UpdateJobResult(ctx context.Context, id string, status 
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, domain.Status, string) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, domain.Status, *string) error); ok {
 		r0 = rf(ctx, id, status, resultPath)
 	} else {
 		r0 = ret.Error(0)

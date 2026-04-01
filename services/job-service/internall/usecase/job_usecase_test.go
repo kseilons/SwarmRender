@@ -16,6 +16,10 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+func sPtr(s string) *string {
+	return &s
+}
+
 func TestJobUseCase_CreateJob_WithFrames(t *testing.T) {
 	// Setup
 	mockJobRepo := mocks.NewJobRepository(t)
@@ -194,8 +198,8 @@ func TestJobUseCase_HandleTaskResult(t *testing.T) {
 		TaskID:     "task-1",
 		Type:       domain.TypeRender,
 		Status:     domain.StatusCompleted,
-		WorkerID:   "worker-1",
-		ResultPath: "s3://output",
+		WorkerID:   sPtr("worker-1"),
+		ResultPath: sPtr("s3://output"),
 	}
 	jobID := "job-1"
 	ctx := context.Background()
@@ -233,10 +237,10 @@ func TestJobUseCase_HandleTaskResult(t *testing.T) {
 			TaskID:     taskID,
 			Type:       domain.TypeStitching,
 			Status:     domain.StatusCompleted,
-			ResultPath: "s3://final/video.mp4",
+			ResultPath: sPtr("s3://final/video.mp4"),
 		}
 
-		mockTaskRepo.On("UpdateTaskStatus", ctx, taskID, domain.StatusCompleted, "", stitchResult.ResultPath).Return(jobID, nil).Once()
+		mockTaskRepo.On("UpdateTaskStatus", ctx, taskID, domain.StatusCompleted, (*string)(nil), stitchResult.ResultPath).Return(jobID, nil).Once()
 		mockJobRepo.On("UpdateJobResult", ctx, jobID, domain.StatusCompleted, stitchResult.ResultPath).Return(nil).Once()
 
 		err := uc.HandleStitchingResult(ctx, stitchResult, slog.Default())

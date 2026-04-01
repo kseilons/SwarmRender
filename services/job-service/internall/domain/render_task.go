@@ -16,8 +16,6 @@ const (
 	StatusStitching       Status = "STITCHING"
 )
 
-
-
 type RenderOptions struct {
 	Engine       string `json:"engine"`
 	UseCPU       bool   `json:"use_cpu"`
@@ -51,16 +49,16 @@ type RenderTask struct {
 }
 
 type Job struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	S3Path      string    `json:"s3_path"`
-	FrameStart  int       `json:"frame_start"`
-	FrameEnd    int       `json:"frame_end"`
-	WorkerCount int       `json:"worker_count"`
-	Status      Status    `json:"status"`
-	ResultPath  string    `json:"result_path,omitempty"`
+	ID          string        `json:"id"`
+	Name        string        `json:"name"`
+	S3Path      string        `json:"s3_path"`
+	FrameStart  int           `json:"frame_start"`
+	FrameEnd    int           `json:"frame_end"`
+	WorkerCount int           `json:"worker_count"`
+	Status      Status        `json:"status"`
+	ResultPath  *string       `json:"result_path,omitempty"`
 	Options     RenderOptions `json:"options"`
-	PreviewURL  string        `json:"preview_url,omitempty"`
+	PreviewURL  *string       `json:"preview_url,omitempty"`
 	CreatedAt   time.Time     `json:"created_at"`
 	UpdatedAt   time.Time     `json:"updated_at"`
 }
@@ -72,8 +70,8 @@ type Task struct {
 	FrameStart int       `json:"frame_start"`
 	FrameEnd   int       `json:"frame_end"`
 	Status     Status    `json:"status"`
-	WorkerID   string    `json:"worker_id,omitempty"`
-	ResultPath string    `json:"result_path,omitempty"`
+	WorkerID   *string   `json:"worker_id,omitempty"`
+	ResultPath *string   `json:"result_path,omitempty"`
 	RetryCount int       `json:"retry_count"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
@@ -86,7 +84,7 @@ type CreateJobRequest struct {
 	FrameEnd    int           `json:"frame_end"`
 	WorkerCount int           `json:"worker_count" binding:"required"`
 	Options     RenderOptions `json:"options"`
-	PreviewURL  string        `json:"preview_url"`
+	PreviewURL  *string       `json:"preview_url"`
 }
 
 type JobResponse struct {
@@ -112,10 +110,10 @@ type RenderResult struct {
 	ProjectID  string           `json:"project_id"`
 	Type       TaskType         `json:"type"`
 	Status     Status           `json:"status"`
-	WorkerID   string           `json:"worker_id"`
+	WorkerID   *string          `json:"worker_id"`
 	Error      string           `json:"error,omitempty"`
 	Metadata   *ProjectMetadata `json:"metadata,omitempty"`
-	ResultPath string           `json:"result_path,omitempty"`
+	ResultPath *string          `json:"result_path,omitempty"`
 }
 
 type ClusterStats struct {
@@ -145,7 +143,7 @@ func (j Job) LogAttrs() []any {
 		slog.String("job_id", j.ID),
 		slog.String("name", j.Name),
 		slog.String("status", string(j.Status)),
-		slog.String("preview_url", j.PreviewURL),
+		slog.Any("preview_url", j.PreviewURL),
 		slog.Int("f_start", j.FrameStart),
 		slog.Int("f_end", j.FrameEnd),
 	}

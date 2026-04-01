@@ -59,7 +59,7 @@ func (r *TaskRepository) GetTasksByJobID(ctx context.Context, jobID string) ([]d
 	return tasks, nil
 }
 
-func (r *TaskRepository) UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID string, resultPath string) (string, error) {
+func (r *TaskRepository) UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID *string, resultPath *string) (string, error) {
 	query := `UPDATE tasks SET status = $1, worker_id = $2, result_path = $3, updated_at = NOW() WHERE id = $4 RETURNING job_id`
 	var jobID string
 	err := r.pool.QueryRow(ctx, query, string(status), workerID, resultPath, id).Scan(&jobID)

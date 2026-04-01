@@ -123,7 +123,7 @@ func (_m *TaskRepository) ResetFailedTasks(ctx context.Context, jobID string) ([
 }
 
 // UpdateTaskStatus provides a mock function with given fields: ctx, id, status, workerID, resultPath
-func (_m *TaskRepository) UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID string, resultPath string) (string, error) {
+func (_m *TaskRepository) UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID *string, resultPath *string) (string, error) {
 	ret := _m.Called(ctx, id, status, workerID, resultPath)
 
 	if len(ret) == 0 {
@@ -132,16 +132,16 @@ func (_m *TaskRepository) UpdateTaskStatus(ctx context.Context, id string, statu
 
 	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, domain.Status, string, string) (string, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, domain.Status, *string, *string) (string, error)); ok {
 		return rf(ctx, id, status, workerID, resultPath)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, domain.Status, string, string) string); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, domain.Status, *string, *string) string); ok {
 		r0 = rf(ctx, id, status, workerID, resultPath)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, domain.Status, string, string) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string, domain.Status, *string, *string) error); ok {
 		r1 = rf(ctx, id, status, workerID, resultPath)
 	} else {
 		r1 = ret.Error(1)

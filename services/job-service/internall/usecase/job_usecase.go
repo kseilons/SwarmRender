@@ -17,7 +17,7 @@ type JobRepository interface {
 	CreateJob(ctx context.Context, job domain.Job) error
 	GetJob(ctx context.Context, id string) (domain.Job, error)
 	UpdateJobStatus(ctx context.Context, id string, status domain.Status) error
-	UpdateJobResult(ctx context.Context, id string, status domain.Status, resultPath string) error
+	UpdateJobResult(ctx context.Context, id string, status domain.Status, resultPath *string) error
 	UpdateJobMetadata(ctx context.Context, id string, frameStart, frameEnd int) error
 	ListJobs(ctx context.Context) ([]domain.Job, error)
 }
@@ -25,7 +25,7 @@ type JobRepository interface {
 type TaskRepository interface {
 	CreateTasks(ctx context.Context, tasks []domain.Task) error
 	GetTasksByJobID(ctx context.Context, jobID string) ([]domain.Task, error)
-	UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID string, resultPath string) (string, error)
+	UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID *string, resultPath *string) (string, error)
 	GetJobTasksStatus(ctx context.Context, jobID string) (map[domain.Status]int, error)
 	ResetFailedTasks(ctx context.Context, jobID string) ([]domain.Task, error)
 }
@@ -328,7 +328,7 @@ func (uc *JobUseCase) HandleStitchingResult(ctx context.Context, result domain.R
 	logger.Info("handling stitching result",
 		slog.String("task_id", result.TaskID),
 		slog.String("status", string(result.Status)),
-		slog.String("result_path", result.ResultPath),
+		slog.Any("result_path", result.ResultPath),
 	)
 
 	jobID, err := uc.taskRepo.UpdateTaskStatus(ctx, result.TaskID, result.Status, result.WorkerID, result.ResultPath)
