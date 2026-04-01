@@ -72,9 +72,9 @@ func (_m *JobUseCase) GetJob(ctx context.Context, id string) (domain.JobResponse
 	return r0, r1
 }
 
-// GenerateUploadURL provides a mock function with given fields: ctx, filename
-func (_m *JobUseCase) GenerateUploadURL(ctx context.Context, filename string) (string, string, error) {
-	ret := _m.Called(ctx, filename)
+// GenerateUploadURL provides a mock function with given fields: ctx, filename, projectID
+func (_m *JobUseCase) GenerateUploadURL(ctx context.Context, filename string, projectID string) (string, string, error) {
+	ret := _m.Called(ctx, filename, projectID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GenerateUploadURL")
@@ -83,23 +83,23 @@ func (_m *JobUseCase) GenerateUploadURL(ctx context.Context, filename string) (s
 	var r0 string
 	var r1 string
 	var r2 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (string, string, error)); ok {
-		return rf(ctx, filename)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (string, string, error)); ok {
+		return rf(ctx, filename, projectID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) string); ok {
-		r0 = rf(ctx, filename)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) string); ok {
+		r0 = rf(ctx, filename, projectID)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) string); ok {
-		r1 = rf(ctx, filename)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) string); ok {
+		r1 = rf(ctx, filename, projectID)
 	} else {
 		r1 = ret.Get(1).(string)
 	}
 
-	if rf, ok := ret.Get(2).(func(context.Context, string) error); ok {
-		r2 = rf(ctx, filename)
+	if rf, ok := ret.Get(2).(func(context.Context, string, string) error); ok {
+		r2 = rf(ctx, filename, projectID)
 	} else {
 		r2 = ret.Error(2)
 	}
@@ -135,6 +135,24 @@ func (_m *JobUseCase) ListJobs(ctx context.Context) ([]domain.Job, error) {
 	}
 
 	return r0, r1
+}
+
+// RetryJob provides a mock function with given fields: ctx, id, logger
+func (_m *JobUseCase) RetryJob(ctx context.Context, id string, logger *slog.Logger) error {
+	ret := _m.Called(ctx, id, logger)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RetryJob")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, *slog.Logger) error); ok {
+		r0 = rf(ctx, id, logger)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // NewJobUseCase creates a new instance of JobUseCase. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

@@ -145,7 +145,7 @@ func TestJobUseCase_GetJob(t *testing.T) {
 
 		resp, err := uc.GetJob(ctx, jobID)
 		assert.NoError(t, err)
-		assert.Equal(t, jobID, resp.ID)
+		assert.Equal(t, jobID, resp.Job.ID)
 		assert.Len(t, resp.Tasks, 1)
 	})
 
@@ -219,7 +219,8 @@ func TestJobUseCase_HandleTaskResult(t *testing.T) {
 
 		mockJobRepo.On("GetJob", ctx, jobID).Return(domain.Job{ID: jobID, FrameStart: 1, FrameEnd: 10, S3Path: "test.blend"}, nil).Once()
 		mockJobRepo.On("UpdateJobStatus", ctx, jobID, domain.StatusStitching).Return(nil).Once()
-		mockProducer.On("SendTask", ctx, jobID, mock.Anything, "stitching-tasks").Return(nil).Once()
+		mockTaskRepo.On("CreateTasks", ctx, mock.Anything).Return(nil).Once()
+		mockProducer.On("SendTask", ctx, mock.Anything, mock.Anything, "stitching-tasks").Return(nil).Once()
 
 		err := uc.HandleTaskResult(ctx, result, slog.Default())
 		assert.NoError(t, err)
@@ -275,7 +276,7 @@ func TestJobUseCase_RequestMetadata_Error(t *testing.T) {
 	ctx := context.Background()
 
 	job := domain.Job{ID: "job-1"}
-	mockProducer.On("SendTask", ctx, job.ID, mock.Anything, "meta").Return(assert.AnError).Once()
+	mockProducer.On("SendTask", ctx, mock.Anything, mock.Anything, "meta").Return(assert.AnError).Once()
 
 	err := uc.RequestMetadata(ctx, job, slog.Default())
 	assert.Error(t, err)

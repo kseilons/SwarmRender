@@ -77,7 +77,7 @@ func TestHandler_GetJob(t *testing.T) {
 		assert.Equal(t, http.StatusOK, resp.Code)
 		var job domain.JobResponse
 		_ = json.Unmarshal(resp.Body.Bytes(), &job)
-		assert.Equal(t, "job-123", job.ID)
+		assert.Equal(t, "job-123", job.Job.ID)
 	})
 
 	t.Run("NotFound", func(t *testing.T) {

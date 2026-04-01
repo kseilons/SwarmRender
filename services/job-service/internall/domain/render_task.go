@@ -89,7 +89,7 @@ type CreateJobRequest struct {
 }
 
 type JobResponse struct {
-	Job
+	Job   Job    `json:"job"`
 	Tasks []Task `json:"tasks,omitempty"`
 }
 
