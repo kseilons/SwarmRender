@@ -15,7 +15,7 @@ type JobUseCase interface {
 	CreateJob(ctx context.Context, req domain.CreateJobRequest, logger *slog.Logger) (domain.Job, error)
 	GetJob(ctx context.Context, id string) (domain.JobResponse, error)
 	ListJobs(ctx context.Context) ([]domain.Job, error)
-	GenerateUploadURL(ctx context.Context, filename string) (string, string, error)
+	GenerateUploadURL(ctx context.Context, filename string, projectID string) (string, string, error)
 }
 
 type Handler struct {
@@ -86,8 +86,9 @@ func (h *Handler) GenerateUploadURL(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "filename query param is required"})
 		return
 	}
+	projectID := c.Query("project_id")
 
-	url, s3Path, err := h.useCase.GenerateUploadURL(c.Request.Context(), filename)
+	url, s3Path, err := h.useCase.GenerateUploadURL(c.Request.Context(), filename, projectID)
 	if err != nil {
 		slog.Error("failed to generate upload url", slog.String("filename", filename), slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

@@ -85,9 +85,9 @@ export const jobService = {
     const { data } = await api.post<Job>('/jobs', req);
     return data;
   },
-  getUploadUrl: async (filename: string): Promise<UploadUrlResponse> => {
+  getUploadUrl: async (filename: string, project_id?: string): Promise<UploadUrlResponse> => {
     const { data } = await api.get<UploadUrlResponse>(`/jobs/upload-url`, {
-      params: { filename }
+      params: { filename, project_id }
     });
     return data;
   },

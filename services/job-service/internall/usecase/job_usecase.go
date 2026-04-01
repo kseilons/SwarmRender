@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"kseilons/job-service/internall/config"
@@ -105,7 +106,7 @@ func (uc *JobUseCase) CreateJob(ctx context.Context, req domain.CreateJobRequest
 func (uc *JobUseCase) RequestMetadata(ctx context.Context, job domain.Job, logger *slog.Logger) error {
 	task := domain.MetadataTask{
 		BaseTask: domain.BaseTask{
-			ProjectID: job.ID,
+			ProjectID: extractProjectID(job.S3Path),
 			TaskID:    fmt.Sprintf("meta-%s", job.ID),
 		},
 		BlendFile: job.S3Path,
@@ -176,7 +177,7 @@ func (uc *JobUseCase) SplitJobIntoTasks(ctx context.Context, job domain.Job, log
 	for _, t := range tasks {
 		renderTask := domain.RenderTask{
 			BaseTask: domain.BaseTask{
-				ProjectID: job.ID,
+				ProjectID: extractProjectID(job.S3Path),
 				TaskID:    t.ID,
 			},
 			CommonTask: domain.CommonTask{
@@ -274,7 +275,7 @@ func (uc *JobUseCase) HandleTaskResult(ctx context.Context, result domain.Render
 func (uc *JobUseCase) StartStitching(ctx context.Context, job domain.Job, logger *slog.Logger) error {
 	task := domain.StitchingTask{
 		BaseTask: domain.BaseTask{
-			ProjectID: job.ID,
+			ProjectID: extractProjectID(job.S3Path),
 			TaskID:    fmt.Sprintf("stitch-%s", job.ID),
 		},
 		S3Path:     job.S3Path,
@@ -368,8 +369,10 @@ func (uc *JobUseCase) ListJobs(ctx context.Context) ([]domain.Job, error) {
 	return uc.jobRepo.ListJobs(ctx)
 }
 
-func (uc *JobUseCase) GenerateUploadURL(ctx context.Context, filename string) (string, string, error) {
-	projectID := uuid.New().String()
+func (uc *JobUseCase) GenerateUploadURL(ctx context.Context, filename string, projectID string) (string, string, error) {
+	if projectID == "" {
+		projectID = uuid.New().String()
+	}
 	objectKey := fmt.Sprintf("%s_sources/%s", projectID, filename)
 
 	url, err := uc.minioRepo.GenerateUploadURL(ctx, objectKey)
@@ -378,4 +381,12 @@ func (uc *JobUseCase) GenerateUploadURL(ctx context.Context, filename string) (s
 	}
 
 	return url, objectKey, nil
+}
+
+func extractProjectID(s3Path string) string {
+	parts := strings.Split(s3Path, "_sources/")
+	if len(parts) > 0 {
+		return parts[0]
+	}
+	return s3Path
 }

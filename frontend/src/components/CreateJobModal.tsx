@@ -67,6 +67,7 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
     let mainBlendFile = '';
 
     try {
+      const projectId = self.crypto.randomUUID();
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const relativePath = file.webkitRelativePath || file.name;
@@ -85,8 +86,8 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
           }
         }
 
-        // 1. Get signed URL
-        const { upload_url, s3_path } = await jobService.getUploadUrl(relativePath);
+        // 1. Get signed URL with project_id
+        const { upload_url, s3_path } = await jobService.getUploadUrl(relativePath, projectId);
         
         // 2. Upload to S3
         await jobService.uploadFileToS3(upload_url, file);

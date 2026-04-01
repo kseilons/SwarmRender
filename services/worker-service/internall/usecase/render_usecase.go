@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"kseilons/worker-service/internall/domain"
 )
@@ -58,7 +59,7 @@ func (uc *RenderUseCase) Execute(ctx context.Context, logger *slog.Logger, task 
 		return nil, err
 	}
 
-	blendPath := filepath.Join(tempDir, task.BlendFile)
+	blendPath := filepath.Join(tempDir, extractRelativePath(task.ProjectID, task.BlendFile))
 	outputDir := filepath.Join(tempDir, "output")
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create output dir: %w", err)
@@ -109,7 +110,6 @@ func (uc *RenderUseCase) reportError(ctx context.Context, logger *slog.Logger, t
 		logger.Error("failed to report failure result", slog.Any("error", reportErr))
 	}
 }
-
 
 func (uc *RenderUseCase) validate(task domain.RenderTask) error {
 	if task.Options.Engine == domain.EngineCycles {
@@ -176,4 +176,8 @@ func (uc *RenderUseCase) isDeviceAllowed(device string) bool {
 		}
 	}
 	return false
+}
+func extractRelativePath(projectID, blendFile string) string {
+	prefix := fmt.Sprintf("%s_sources/", projectID)
+	return strings.TrimPrefix(blendFile, prefix)
 }
