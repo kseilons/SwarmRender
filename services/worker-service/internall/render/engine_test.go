@@ -101,7 +101,7 @@ func TestEngine_Render_ValidationFailure(t *testing.T) {
 		BlendPath: "", // trigger error
 	}
 
-	output, err := e.Render(context.Background(), logger, job)
+	output, err := e.Render(context.Background(), logger, job, nil)
 	assert.Error(t, err)
 	assert.Nil(t, output)
 	assert.Contains(t, err.Error(), "blend file path is required")
@@ -116,7 +116,7 @@ func TestEngine_Render_ExecutionFailure(t *testing.T) {
 		BlendPath: "/tmp/test.blend",
 	}
 
-	_, err := e.Render(context.Background(), logger, job)
+	_, err := e.Render(context.Background(), logger, job, nil)
 	assert.Error(t, err)
 	// If executable is not found, output is usually nil in this case
 }

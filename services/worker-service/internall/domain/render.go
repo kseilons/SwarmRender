@@ -43,6 +43,7 @@ const (
 	StatusPending   Status = "PENDING"
 	StatusCompleted Status = "COMPLETED"
 	StatusFailed    Status = "FAILED"
+	StatusProcessing Status = "PROCESSING"
 )
 
 
@@ -105,7 +106,8 @@ type RenderResult struct {
 	WorkerID   string           `json:"worker_id"`
 	Error      string           `json:"error,omitempty"`
 	Metadata   *ProjectMetadata `json:"metadata,omitempty"`
-	ResultPath string           `json:"result_path,omitempty"`
+	ResultPath   string           `json:"result_path,omitempty"`
+	CurrentFrame int              `json:"current_frame,omitempty"`
 }
 
 

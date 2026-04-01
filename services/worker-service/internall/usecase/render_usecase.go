@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"kseilons/worker-service/internall/domain"
 )
@@ -17,7 +18,7 @@ type ProjectRepository interface {
 }
 
 type Renderer interface {
-	Render(ctx context.Context, logger *slog.Logger, job domain.RenderJob) ([]byte, error)
+	Render(ctx context.Context, logger *slog.Logger, job domain.RenderJob, progress chan<- int) ([]byte, error)
 }
 
 type ResultProducer interface {
@@ -67,12 +68,37 @@ func (uc *RenderUseCase) Execute(ctx context.Context, logger *slog.Logger, task 
 
 	job := uc.prepareJob(task, blendPath, outputDir)
 
-	logger.Info("calling renderer",
-		slog.String("blend_path", job.BlendPath),
-		slog.String("output_path", job.OutputPath),
-	)
-
-	renderOutput, err := uc.renderer.Render(ctx, logger, job)
+	// Setup progress reporting
+	progressChan := make(chan int, 10)
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+ 
+	done := make(chan struct{})
+	currentFrame := task.StartFrame
+ 
+	go func() {
+		for {
+			select {
+			case f := <-progressChan:
+				currentFrame = f
+			case <-ticker.C:
+				uc.resultProducer.ReportResult(ctx, domain.RenderResult{
+					TaskID:       task.TaskID,
+					ProjectID:    task.ProjectID,
+					Type:         domain.TypeRender,
+					Status:       domain.StatusProcessing,
+					WorkerID:     os.Getenv("HOSTNAME"),
+					CurrentFrame: currentFrame,
+				})
+			case <-done:
+				return
+			}
+		}
+	}()
+ 
+	renderOutput, err := uc.renderer.Render(ctx, logger, job, progressChan)
+	close(done)
+ 
 	if err != nil {
 		uc.reportError(ctx, logger, task, err)
 		return renderOutput, err

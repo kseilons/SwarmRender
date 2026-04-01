@@ -1,11 +1,14 @@
 package render
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -20,7 +23,7 @@ func NewEngine(executablePath string) *Engine {
 	return &Engine{executablePath: executablePath}
 }
 
-func (e *Engine) Render(ctx context.Context, logger *slog.Logger, job domain.RenderJob) ([]byte, error) {
+func (e *Engine) Render(ctx context.Context, logger *slog.Logger, job domain.RenderJob, progress chan<- int) ([]byte, error) {
 	if job.BlendPath == "" {
 		err := fmt.Errorf("blend file path is required")
 		logger.Error("validation failed", slog.Any("error", err))
@@ -35,8 +38,50 @@ func (e *Engine) Render(ctx context.Context, logger *slog.Logger, job domain.Ren
 	)
 
 	cmd := exec.CommandContext(ctx, e.executablePath, args...)
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create stdout pipe: %w", err)
+	}
+	cmd.Stderr = cmd.Stdout
 
-	output, err := cmd.CombinedOutput()
+	if err := cmd.Start(); err != nil {
+		return nil, fmt.Errorf("failed to start blender: %w", err)
+	}
+
+	fraRegex := regexp.MustCompile(`Fra:(\d+)`)
+	var fullOutput strings.Builder
+	reader := bufio.NewReader(stdout)
+
+	// Track last reported frame to avoid redundant updates
+	lastFrame := -1
+
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			if err != io.EOF {
+				logger.Warn("error reading blender output", slog.Any("error", err))
+			}
+			break
+		}
+
+		fullOutput.WriteString(line)
+
+		if matches := fraRegex.FindStringSubmatch(line); len(matches) > 1 {
+			if frame, err := strconv.Atoi(matches[1]); err == nil {
+				if frame != lastFrame && progress != nil {
+					select {
+					case progress <- frame:
+						lastFrame = frame
+					default:
+						// Skip if channel is full
+					}
+				}
+			}
+		}
+	}
+
+	err = cmd.Wait()
+	output := []byte(fullOutput.String())
 	if err != nil {
 		logger.Error("render failed",
 			slog.Any("error", err),
