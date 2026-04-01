@@ -35,8 +35,36 @@ func NewMinioRepository(cfg config.MinioConfig) (*MinioRepository, error) {
 func (r *MinioRepository) GenerateUploadURL(ctx context.Context, objectKey string) (string, error) {
 	presignedURL, err := r.client.PresignedPutObject(ctx, r.bucket, objectKey, r.expiry)
 	if err != nil {
-		return "", fmt.Errorf("failed to generate presigned url: %w", err)
+		return "", fmt.Errorf("failed to generate presigned upload url: %w", err)
 	}
 
 	return presignedURL.String(), nil
+}
+
+func (r *MinioRepository) GenerateDownloadURL(ctx context.Context, objectKey string) (string, error) {
+	presignedURL, err := r.client.PresignedGetObject(ctx, r.bucket, objectKey, r.expiry, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate presigned download url: %w", err)
+	}
+
+	return presignedURL.String(), nil
+}
+
+func (r *MinioRepository) CopyObject(ctx context.Context, srcKey, dstKey string) error {
+	src := minio.CopySrcOptions{
+		Bucket: r.bucket,
+		Object: srcKey,
+	}
+
+	dst := minio.CopyDestOptions{
+		Bucket: r.bucket,
+		Object: dstKey,
+	}
+
+	_, err := r.client.CopyObject(ctx, dst, src)
+	if err != nil {
+		return fmt.Errorf("failed to copy object from %s to %s: %w", srcKey, dstKey, err)
+	}
+
+	return nil
 }

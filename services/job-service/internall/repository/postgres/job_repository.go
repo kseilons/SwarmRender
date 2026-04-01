@@ -65,6 +65,12 @@ func (r *JobRepository) UpdateJobMetadata(ctx context.Context, id string, frameS
 	return err
 }
 
+func (r *JobRepository) UpdateJobPreview(ctx context.Context, id string, previewPath string) error {
+	query := `UPDATE jobs SET preview_url = $1, updated_at = NOW() WHERE id = $2`
+	_, err := r.pool.Exec(ctx, query, previewPath, id)
+	return err
+}
+
 func (r *JobRepository) ListJobs(ctx context.Context) ([]domain.Job, error) {
 	query := `SELECT id, name, s3_path, frame_start, frame_end, worker_count, status, result_path, preview_url, created_at FROM jobs ORDER BY created_at DESC`
 	rows, err := r.pool.Query(ctx, query)

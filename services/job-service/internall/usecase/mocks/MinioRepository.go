@@ -41,6 +41,52 @@ func (_m *MinioRepository) GenerateUploadURL(ctx context.Context, objectKey stri
 	return r0, r1
 }
 
+// GenerateDownloadURL provides a mock function with given fields: ctx, objectKey
+func (_m *MinioRepository) GenerateDownloadURL(ctx context.Context, objectKey string) (string, error) {
+	ret := _m.Called(ctx, objectKey)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GenerateDownloadURL")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+		return rf(ctx, objectKey)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) string); ok {
+		r0 = rf(ctx, objectKey)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, objectKey)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// CopyObject provides a mock function with given fields: ctx, srcKey, dstKey
+func (_m *MinioRepository) CopyObject(ctx context.Context, srcKey string, dstKey string) error {
+	ret := _m.Called(ctx, srcKey, dstKey)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CopyObject")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, srcKey, dstKey)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // NewMinioRepository creates a new instance of MinioRepository. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMinioRepository(t interface {

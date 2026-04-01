@@ -108,6 +108,24 @@ func (_m *JobRepository) UpdateJobMetadata(ctx context.Context, id string, frame
 	return r0
 }
 
+// UpdateJobPreview provides a mock function with given fields: ctx, id, previewPath
+func (_m *JobRepository) UpdateJobPreview(ctx context.Context, id string, previewPath string) error {
+	ret := _m.Called(ctx, id, previewPath)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateJobPreview")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, id, previewPath)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // UpdateJobResult provides a mock function with given fields: ctx, id, status, resultPath
 func (_m *JobRepository) UpdateJobResult(ctx context.Context, id string, status domain.Status, resultPath *string) error {
 	ret := _m.Called(ctx, id, status, resultPath)

@@ -18,12 +18,14 @@ type JobRepository interface {
 	GetJob(ctx context.Context, id string) (domain.Job, error)
 	UpdateJobStatus(ctx context.Context, id string, status domain.Status) error
 	UpdateJobResult(ctx context.Context, id string, status domain.Status, resultPath *string) error
+	UpdateJobPreview(ctx context.Context, id string, previewPath string) error
 	UpdateJobMetadata(ctx context.Context, id string, frameStart, frameEnd int) error
 	ListJobs(ctx context.Context) ([]domain.Job, error)
 }
 
 type TaskRepository interface {
 	CreateTasks(ctx context.Context, tasks []domain.Task) error
+	GetTask(ctx context.Context, id string) (domain.Task, error)
 	GetTasksByJobID(ctx context.Context, jobID string) ([]domain.Task, error)
 	UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID *string, resultPath *string) (string, error)
 	GetJobTasksStatus(ctx context.Context, jobID string) (map[domain.Status]int, error)
@@ -37,6 +39,8 @@ type TaskProducer interface {
 
 type MinioRepository interface {
 	GenerateUploadURL(ctx context.Context, objectKey string) (string, error)
+	GenerateDownloadURL(ctx context.Context, objectKey string) (string, error)
+	CopyObject(ctx context.Context, srcKey, dstKey string) error
 }
 
 type JobUseCase struct {
@@ -264,6 +268,17 @@ func (uc *JobUseCase) HandleTaskResult(ctx context.Context, result domain.Render
 		return uc.UpdateJobStatus(ctx, jobID, domain.StatusFailed, logger)
 	}
 
+	// Preview generation logic
+	if result.Status == domain.StatusCompleted && result.Type == domain.TypeRender {
+		job, err := uc.jobRepo.GetJob(ctx, jobID)
+		if err == nil && (job.PreviewURL == nil || *job.PreviewURL == "") {
+			task, err := uc.taskRepo.GetTask(ctx, result.TaskID)
+			if err == nil {
+				uc.generatePreview(ctx, job, task, logger)
+			}
+		}
+	}
+
 	// If some tasks failed but not all, we might want to mark job as FAILED eventually,
 	// but for now we follow the user's "if all ERROR -> FAILED"
 	if stats[domain.StatusFailed] > 0 && (stats[domain.StatusCompleted]+stats[domain.StatusFailed] == totalTasks) {
@@ -395,14 +410,72 @@ func (uc *JobUseCase) GetJob(ctx context.Context, id string) (domain.JobResponse
 		return domain.JobResponse{}, err
 	}
 
+	if job.PreviewURL != nil && *job.PreviewURL != "" && !strings.HasPrefix(*job.PreviewURL, "http") {
+		url, err := uc.minioRepo.GenerateDownloadURL(ctx, *job.PreviewURL)
+		if err == nil {
+			job.PreviewURL = &url
+		}
+	}
+
+	if job.ResultPath != nil && *job.ResultPath != "" && strings.HasSuffix(*job.ResultPath, ".mp4") {
+		// If it's a video path from stitching service, it might be an s3:// URL or a key
+		key := strings.TrimPrefix(*job.ResultPath, "s3://")
+		// Remove bucket name from key if present
+		parts := strings.SplitN(key, "/", 2)
+		if len(parts) == 2 {
+			key = parts[1]
+		}
+		url, err := uc.minioRepo.GenerateDownloadURL(ctx, key)
+		if err == nil {
+			job.ResultPath = &url
+		}
+	}
+
 	return domain.JobResponse{
 		Job:   job,
 		Tasks: tasks,
 	}, nil
 }
 
+func (uc *JobUseCase) generatePreview(ctx context.Context, job domain.Job, task domain.Task, logger *slog.Logger) {
+	projectID := extractProjectID(job.S3Path)
+	// Example: projectID_results/Scene_0001.png
+	scene := "Scene"
+	if job.Options.Scene != "" {
+		scene = job.Options.Scene
+	}
+
+	frameNum := task.FrameStart
+	srcKey := fmt.Sprintf("%s_results/%s_%04d.png", projectID, scene, frameNum)
+	dstKey := fmt.Sprintf("%s_preview.png", projectID)
+
+	logger.Info("generating preview", slog.String("src", srcKey), slog.String("dst", dstKey))
+
+	if err := uc.minioRepo.CopyObject(ctx, srcKey, dstKey); err != nil {
+		logger.Error("failed to copy preview object", slog.Any("error", err))
+		return
+	}
+
+	if err := uc.jobRepo.UpdateJobPreview(ctx, job.ID, dstKey); err != nil {
+		logger.Error("failed to update job preview path", slog.Any("error", err))
+	}
+}
+
 func (uc *JobUseCase) ListJobs(ctx context.Context) ([]domain.Job, error) {
-	return uc.jobRepo.ListJobs(ctx)
+	jobs, err := uc.jobRepo.ListJobs(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range jobs {
+		if jobs[i].PreviewURL != nil && *jobs[i].PreviewURL != "" && !strings.HasPrefix(*jobs[i].PreviewURL, "http") {
+			url, err := uc.minioRepo.GenerateDownloadURL(ctx, *jobs[i].PreviewURL)
+			if err == nil {
+				jobs[i].PreviewURL = &url
+			}
+		}
+	}
+	return jobs, nil
 }
 
 func (uc *JobUseCase) RetryJob(ctx context.Context, jobID string, logger *slog.Logger) error {

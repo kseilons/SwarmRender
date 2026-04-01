@@ -39,6 +39,16 @@ func (r *TaskRepository) CreateTasks(ctx context.Context, tasks []domain.Task) e
 	return nil
 }
 
+func (r *TaskRepository) GetTask(ctx context.Context, id string) (domain.Task, error) {
+	query := `SELECT id, job_id, type, frame_start, frame_end, status, worker_id, result_path, retry_count, created_at, updated_at FROM tasks WHERE id = $1`
+	var t domain.Task
+	err := r.pool.QueryRow(ctx, query, id).Scan(&t.ID, &t.JobID, &t.Type, &t.FrameStart, &t.FrameEnd, &t.Status, &t.WorkerID, &t.ResultPath, &t.RetryCount, &t.CreatedAt, &t.UpdatedAt)
+	if err != nil {
+		return domain.Task{}, fmt.Errorf("failed to get task: %w", err)
+	}
+	return t, nil
+}
+
 func (r *TaskRepository) GetTasksByJobID(ctx context.Context, jobID string) ([]domain.Task, error) {
 	query := `SELECT id, job_id, type, frame_start, frame_end, status, worker_id, result_path, retry_count, created_at, updated_at FROM tasks WHERE job_id = $1`
 	rows, err := r.pool.Query(ctx, query, jobID)
