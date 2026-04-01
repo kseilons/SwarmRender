@@ -24,7 +24,7 @@ func TestJobUseCase_CreateJob_WithFrames(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	cfg := config.KafkaConfig{RenderTopic: "render-tasks"}
-	uc := usecase.NewJobUseCase(mockJobRepo, mockTaskRepo, mockProducer, cfg, nil)
+	uc := usecase.NewJobUseCase(mockJobRepo, mockTaskRepo, nil, mockProducer, cfg, nil)
 
 	req := domain.CreateJobRequest{
 		Name:        "test-job",
@@ -61,7 +61,7 @@ func TestJobUseCase_CreateJob_WithoutFrames(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	cfg := config.KafkaConfig{MetadataTopic: "meta-tasks"}
-	uc := usecase.NewJobUseCase(mockJobRepo, mockTaskRepo, mockProducer, cfg, nil)
+	uc := usecase.NewJobUseCase(mockJobRepo, mockTaskRepo, nil, mockProducer, cfg, nil)
 
 	req := domain.CreateJobRequest{
 		Name:        "meta-job",
@@ -94,7 +94,7 @@ func TestJobUseCase_HandleMetadataResult(t *testing.T) {
 	mockProducer := mocks.NewTaskProducer(t)
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	uc := usecase.NewJobUseCase(mockJobRepo, mockTaskRepo, mockProducer, config.KafkaConfig{}, nil)
+	uc := usecase.NewJobUseCase(mockJobRepo, mockTaskRepo, nil, mockProducer, config.KafkaConfig{}, nil)
 
 	jobID := uuid.New().String()
 	ctx := context.Background()
@@ -120,7 +120,7 @@ func TestJobUseCase_HandleMetadataResult(t *testing.T) {
 
 func TestJobUseCase_CreateJob_RepoFailure(t *testing.T) {
 	mockJobRepo := mocks.NewJobRepository(t)
-	uc := usecase.NewJobUseCase(mockJobRepo, nil, nil, config.KafkaConfig{}, nil)
+	uc := usecase.NewJobUseCase(mockJobRepo, nil, nil, nil, config.KafkaConfig{}, nil)
 
 	req := domain.CreateJobRequest{Name: "fail", S3Path: "path", WorkerCount: 1}
 	ctx := context.Background()
@@ -134,7 +134,7 @@ func TestJobUseCase_CreateJob_RepoFailure(t *testing.T) {
 func TestJobUseCase_GetJob(t *testing.T) {
 	mockJobRepo := mocks.NewJobRepository(t)
 	mockTaskRepo := mocks.NewTaskRepository(t)
-	uc := usecase.NewJobUseCase(mockJobRepo, mockTaskRepo, nil, config.KafkaConfig{}, nil)
+	uc := usecase.NewJobUseCase(mockJobRepo, mockTaskRepo, nil, nil, config.KafkaConfig{}, nil)
 
 	jobID := "job-123"
 	ctx := context.Background()
@@ -166,7 +166,7 @@ func TestJobUseCase_GetJob(t *testing.T) {
 
 func TestJobUseCase_ListJobs(t *testing.T) {
 	mockJobRepo := mocks.NewJobRepository(t)
-	uc := usecase.NewJobUseCase(mockJobRepo, nil, nil, config.KafkaConfig{}, nil)
+	uc := usecase.NewJobUseCase(mockJobRepo, nil, nil, nil, config.KafkaConfig{}, nil)
 
 	ctx := context.Background()
 
@@ -188,7 +188,7 @@ func TestJobUseCase_HandleTaskResult(t *testing.T) {
 	mockTaskRepo := mocks.NewTaskRepository(t)
 	mockJobRepo := mocks.NewJobRepository(t)
 	mockProducer := mocks.NewTaskProducer(t)
-	uc := usecase.NewJobUseCase(mockJobRepo, mockTaskRepo, mockProducer, config.KafkaConfig{StitchingTopic: "stitch"}, nil)
+	uc := usecase.NewJobUseCase(mockJobRepo, mockTaskRepo, nil, mockProducer, config.KafkaConfig{RenderTopic: "render-tasks"}, nil)
 
 	result := domain.RenderResult{
 		TaskID:     "task-1",
@@ -203,7 +203,7 @@ func TestJobUseCase_HandleTaskResult(t *testing.T) {
 	t.Run("TaskCompleted_NotAllFinished", func(t *testing.T) {
 		mockTaskRepo.On("UpdateTaskStatus", ctx, result.TaskID, result.Status, result.WorkerID, result.ResultPath).Return(jobID, nil).Once()
 		mockTaskRepo.On("GetJobTasksStatus", ctx, jobID).Return(map[domain.Status]int{
-			domain.StatusCompleted: 1,
+			domain.StatusCompleted:  1,
 			domain.StatusProcessing: 1,
 		}, nil).Once()
 
@@ -216,10 +216,10 @@ func TestJobUseCase_HandleTaskResult(t *testing.T) {
 		mockTaskRepo.On("GetJobTasksStatus", ctx, jobID).Return(map[domain.Status]int{
 			domain.StatusCompleted: 2,
 		}, nil).Once()
-		
+
 		mockJobRepo.On("GetJob", ctx, jobID).Return(domain.Job{ID: jobID, FrameStart: 1, FrameEnd: 10, S3Path: "test.blend"}, nil).Once()
 		mockJobRepo.On("UpdateJobStatus", ctx, jobID, domain.StatusStitching).Return(nil).Once()
-		mockProducer.On("SendTask", ctx, jobID, mock.Anything, "stitch").Return(nil).Once()
+		mockProducer.On("SendTask", ctx, jobID, mock.Anything, "stitching-tasks").Return(nil).Once()
 
 		err := uc.HandleTaskResult(ctx, result, slog.Default())
 		assert.NoError(t, err)
@@ -233,7 +233,7 @@ func TestJobUseCase_HandleTaskResult(t *testing.T) {
 			ResultPath: "s3://final/video.mp4",
 		}
 		mockJobRepo.On("UpdateJobResult", ctx, jobID, domain.StatusCompleted, stitchResult.ResultPath).Return(nil).Once()
-		
+
 		err := uc.HandleStitchingResult(ctx, jobID, stitchResult, slog.Default())
 		assert.NoError(t, err)
 	})
@@ -241,12 +241,12 @@ func TestJobUseCase_HandleTaskResult(t *testing.T) {
 	t.Run("AllTasksFailed_TriggersFailed", func(t *testing.T) {
 		failResult := result
 		failResult.Status = domain.StatusFailed
-		
+
 		mockTaskRepo.On("UpdateTaskStatus", ctx, failResult.TaskID, failResult.Status, failResult.WorkerID, failResult.ResultPath).Return(jobID, nil).Once()
 		mockTaskRepo.On("GetJobTasksStatus", ctx, jobID).Return(map[domain.Status]int{
 			domain.StatusFailed: 2,
 		}, nil).Once()
-		
+
 		mockJobRepo.On("UpdateJobStatus", ctx, jobID, domain.StatusFailed).Return(nil).Once()
 
 		err := uc.HandleTaskResult(ctx, failResult, slog.Default())
@@ -256,7 +256,7 @@ func TestJobUseCase_HandleTaskResult(t *testing.T) {
 
 func TestJobUseCase_UpdateJobStatus_Error(t *testing.T) {
 	mockJobRepo := mocks.NewJobRepository(t)
-	uc := usecase.NewJobUseCase(mockJobRepo, nil, nil, config.KafkaConfig{}, nil)
+	uc := usecase.NewJobUseCase(mockJobRepo, nil, nil, nil, config.KafkaConfig{}, nil)
 	ctx := context.Background()
 
 	mockJobRepo.On("UpdateJobStatus", ctx, "job-1", domain.StatusProcessing).Return(assert.AnError).Once()
@@ -267,7 +267,7 @@ func TestJobUseCase_UpdateJobStatus_Error(t *testing.T) {
 func TestJobUseCase_RequestMetadata_Error(t *testing.T) {
 	mockProducer := mocks.NewTaskProducer(t)
 	mockJobRepo := mocks.NewJobRepository(t)
-	uc := usecase.NewJobUseCase(mockJobRepo, nil, mockProducer, config.KafkaConfig{MetadataTopic: "meta"}, nil)
+	uc := usecase.NewJobUseCase(mockJobRepo, nil, nil, mockProducer, config.KafkaConfig{MetadataTopic: "meta"}, nil)
 	ctx := context.Background()
 
 	job := domain.Job{ID: "job-1"}
@@ -278,6 +278,6 @@ func TestJobUseCase_RequestMetadata_Error(t *testing.T) {
 }
 
 func TestJobUseCase_SetKafkaConfig(t *testing.T) {
-	uc := usecase.NewJobUseCase(nil, nil, nil, config.KafkaConfig{}, nil)
+	uc := usecase.NewJobUseCase(nil, nil, nil, nil, config.KafkaConfig{}, nil)
 	uc.SetKafkaConfig(config.KafkaConfig{RenderTopic: "new-topic"})
 }

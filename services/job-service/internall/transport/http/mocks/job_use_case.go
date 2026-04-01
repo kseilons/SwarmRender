@@ -72,6 +72,41 @@ func (_m *JobUseCase) GetJob(ctx context.Context, id string) (domain.JobResponse
 	return r0, r1
 }
 
+// GenerateUploadURL provides a mock function with given fields: ctx, filename
+func (_m *JobUseCase) GenerateUploadURL(ctx context.Context, filename string) (string, string, error) {
+	ret := _m.Called(ctx, filename)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GenerateUploadURL")
+	}
+
+	var r0 string
+	var r1 string
+	var r2 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (string, string, error)); ok {
+		return rf(ctx, filename)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) string); ok {
+		r0 = rf(ctx, filename)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) string); ok {
+		r1 = rf(ctx, filename)
+	} else {
+		r1 = ret.Get(1).(string)
+	}
+
+	if rf, ok := ret.Get(2).(func(context.Context, string) error); ok {
+		r2 = rf(ctx, filename)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
 // ListJobs provides a mock function with given fields: ctx
 func (_m *JobUseCase) ListJobs(ctx context.Context) ([]domain.Job, error) {
 	ret := _m.Called(ctx)

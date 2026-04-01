@@ -33,21 +33,27 @@ type TaskProducer interface {
 	Close() error
 }
 
-type JobUseCase struct {
-	jobRepo  JobRepository
-	taskRepo TaskRepository
-	producer TaskProducer
-	kafkaCfg config.KafkaConfig
-	hub      *Hub
+type MinioRepository interface {
+	GenerateUploadURL(ctx context.Context, objectKey string) (string, error)
 }
 
-func NewJobUseCase(jobRepo JobRepository, taskRepo TaskRepository, producer TaskProducer, cfg config.KafkaConfig, hub *Hub) *JobUseCase {
+type JobUseCase struct {
+	jobRepo   JobRepository
+	taskRepo  TaskRepository
+	minioRepo MinioRepository
+	producer  TaskProducer
+	kafkaCfg  config.KafkaConfig
+	hub       *Hub
+}
+
+func NewJobUseCase(jobRepo JobRepository, taskRepo TaskRepository, minioRepo MinioRepository, producer TaskProducer, cfg config.KafkaConfig, hub *Hub) *JobUseCase {
 	return &JobUseCase{
-		jobRepo:  jobRepo,
-		taskRepo: taskRepo,
-		producer: producer,
-		kafkaCfg: cfg,
-		hub:      hub,
+		jobRepo:   jobRepo,
+		taskRepo:  taskRepo,
+		minioRepo: minioRepo,
+		producer:  producer,
+		kafkaCfg:  cfg,
+		hub:       hub,
 	}
 }
 
@@ -255,7 +261,7 @@ func (uc *JobUseCase) HandleTaskResult(ctx context.Context, result domain.Render
 		return uc.UpdateJobStatus(ctx, jobID, domain.StatusFailed, logger)
 	}
 
-	// If some tasks failed but not all, we might want to mark job as FAILED eventually, 
+	// If some tasks failed but not all, we might want to mark job as FAILED eventually,
 	// but for now we follow the user's "if all ERROR -> FAILED"
 	if stats[domain.StatusFailed] > 0 && (stats[domain.StatusCompleted]+stats[domain.StatusFailed] == totalTasks) {
 		logger.Info("some tasks failed, transitioning job to FAILED", slog.String("job_id", jobID))
@@ -360,4 +366,16 @@ func (uc *JobUseCase) GetJob(ctx context.Context, id string) (domain.JobResponse
 
 func (uc *JobUseCase) ListJobs(ctx context.Context) ([]domain.Job, error) {
 	return uc.jobRepo.ListJobs(ctx)
+}
+
+func (uc *JobUseCase) GenerateUploadURL(ctx context.Context, filename string) (string, string, error) {
+	projectID := uuid.New().String()
+	objectKey := fmt.Sprintf("%s_sources/%s", projectID, filename)
+
+	url, err := uc.minioRepo.GenerateUploadURL(ctx, objectKey)
+	if err != nil {
+		return "", "", err
+	}
+
+	return url, objectKey, nil
 }

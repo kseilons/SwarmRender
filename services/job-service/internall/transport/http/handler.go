@@ -2,10 +2,10 @@ package http
 
 import (
 	"context"
-	"net/http"
-	"log/slog"
 	"kseilons/job-service/internall/domain"
 	"kseilons/job-service/internall/usecase"
+	"log/slog"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -15,6 +15,7 @@ type JobUseCase interface {
 	CreateJob(ctx context.Context, req domain.CreateJobRequest, logger *slog.Logger) (domain.Job, error)
 	GetJob(ctx context.Context, id string) (domain.JobResponse, error)
 	ListJobs(ctx context.Context) ([]domain.Job, error)
+	GenerateUploadURL(ctx context.Context, filename string) (string, string, error)
 }
 
 type Handler struct {
@@ -33,6 +34,7 @@ func (h *Handler) Register(r *gin.Engine) {
 	r.POST("/jobs", h.CreateJob)
 	r.GET("/jobs", h.ListJobs)
 	r.GET("/jobs/:id", h.GetJob)
+	r.GET("/jobs/upload-url", h.GenerateUploadURL)
 	r.GET("/ws", h.HandleWS)
 }
 
@@ -76,6 +78,26 @@ func (h *Handler) ListJobs(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, jobs)
+}
+
+func (h *Handler) GenerateUploadURL(c *gin.Context) {
+	filename := c.Query("filename")
+	if filename == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "filename query param is required"})
+		return
+	}
+
+	url, s3Path, err := h.useCase.GenerateUploadURL(c.Request.Context(), filename)
+	if err != nil {
+		slog.Error("failed to generate upload url", slog.String("filename", filename), slog.Any("error", err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"upload_url": url,
+		"s3_path":    s3Path,
+	})
 }
 
 func (h *Handler) HandleWS(c *gin.Context) {

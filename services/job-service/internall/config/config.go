@@ -13,6 +13,7 @@ type Config struct {
 	Http     HttpServerConfig `yaml:"http"`
 	Database DatabaseConfig   `yaml:"database"`
 	Kafka    KafkaConfig      `yaml:"kafka"`
+	Minio    MinioConfig      `yaml:"minio"`
 }
 
 type HttpServerConfig struct {
@@ -35,12 +36,21 @@ func (c DatabaseConfig) URL() string {
 }
 
 type KafkaConfig struct {
-	Brokers       []string `yaml:"brokers" env:"KAFKA_BROKERS" env-default:"localhost:9092"`
-	RenderTopic   string   `yaml:"render_topic" env:"KAFKA_RENDER_TOPIC" env-default:"render-tasks"`
+	Brokers        []string `yaml:"brokers" env:"KAFKA_BROKERS" env-default:"localhost:9092"`
+	RenderTopic    string   `yaml:"render_topic" env:"KAFKA_RENDER_TOPIC" env-default:"render-tasks"`
 	MetadataTopic  string   `yaml:"metadata_topic" env:"KAFKA_METADATA_TOPIC" env-default:"metadata-tasks"`
 	StitchingTopic string   `yaml:"stitching_topic" env:"KAFKA_STITCHING_TOPIC" env-default:"stitching-tasks"`
 	ResultTopic    string   `yaml:"result_topic" env:"KAFKA_RESULT_TOPIC" env-default:"render-results"`
-	ResultGroupID string   `yaml:"result_group_id" env:"KAFKA_RESULT_GROUP_ID" env-default:"job-service-results"`
+	ResultGroupID  string   `yaml:"result_group_id" env:"KAFKA_RESULT_GROUP_ID" env-default:"job-service-results"`
+}
+
+type MinioConfig struct {
+	Endpoint        string `yaml:"endpoint" env:"MINIO_ENDPOINT" env-default:"localhost:9000"`
+	AccessKey       string `yaml:"access_key" env:"MINIO_ACCESS_KEY" env-default:"admin"`
+	SecretKey       string `yaml:"secret_key" env:"MINIO_SECRET_KEY" env-default:"password"`
+	UseSSL          bool   `yaml:"use_ssl" env:"MINIO_USE_SSL" env-default:"false"`
+	Bucket          string `yaml:"bucket" env:"MINIO_BUCKET" env-default:"projects"`
+	PresignedExpiry int    `yaml:"presigned_expiry" env:"MINIO_PRESIGNED_EXPIRY" env-default:"3600"`
 }
 
 func Load(configPath string) (*Config, error) {

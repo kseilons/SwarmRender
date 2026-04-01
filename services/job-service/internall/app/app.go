@@ -9,6 +9,7 @@ import (
 
 	"kseilons/job-service/internall/config"
 	"kseilons/job-service/internall/producer"
+	"kseilons/job-service/internall/repository/minio"
 	"kseilons/job-service/internall/repository/postgres"
 	transport_http "kseilons/job-service/internall/transport/http"
 	transport_kafka "kseilons/job-service/internall/transport/kafka"
@@ -27,8 +28,9 @@ type Infrastructure struct {
 }
 
 type Repositories struct {
-	Job  *postgres.JobRepository
-	Task *postgres.TaskRepository
+	Job   *postgres.JobRepository
+	Task  *postgres.TaskRepository
+	Minio *minio.MinioRepository
 }
 
 type UseCases struct {
@@ -57,7 +59,9 @@ func (a *App) Init(ctx context.Context) error {
 	if err := a.initInfrastructure(ctx); err != nil {
 		return err
 	}
-	a.initRepositories()
+	if err := a.initRepositories(); err != nil {
+		return err
+	}
 	a.initUseCases()
 	a.initHandlers()
 	return nil
@@ -84,16 +88,23 @@ func (a *App) initInfrastructure(ctx context.Context) error {
 	return nil
 }
 
-func (a *App) initRepositories() {
-	a.repos = &Repositories{
-		Job:  postgres.NewJobRepository(a.infra.Pool),
-		Task: postgres.NewTaskRepository(a.infra.Pool),
+func (a *App) initRepositories() error {
+	minioRepo, err := minio.NewMinioRepository(a.cfg.Minio)
+	if err != nil {
+		return fmt.Errorf("failed to connect to minio: %w", err)
 	}
+
+	a.repos = &Repositories{
+		Job:   postgres.NewJobRepository(a.infra.Pool),
+		Task:  postgres.NewTaskRepository(a.infra.Pool),
+		Minio: minioRepo,
+	}
+	return nil
 }
 
 func (a *App) initUseCases() {
 	a.useCases = &UseCases{
-		Job:     usecase.NewJobUseCase(a.repos.Job, a.repos.Task, a.infra.Producer, a.cfg.Kafka, a.infra.Hub),
+		Job:     usecase.NewJobUseCase(a.repos.Job, a.repos.Task, a.repos.Minio, a.infra.Producer, a.cfg.Kafka, a.infra.Hub),
 		Cluster: usecase.NewClusterUseCase(a.cfg.Http),
 	}
 }
