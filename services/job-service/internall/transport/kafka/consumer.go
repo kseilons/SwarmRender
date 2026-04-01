@@ -14,7 +14,7 @@ type JobUseCase interface {
 	UpdateJobStatus(ctx context.Context, id string, status domain.Status, logger *slog.Logger) error
 	HandleMetadataResult(ctx context.Context, jobID string, frameStart, frameEnd int, logger *slog.Logger) error
 	HandleTaskResult(ctx context.Context, result domain.RenderResult, logger *slog.Logger) error
-	HandleStitchingResult(ctx context.Context, jobID string, result domain.RenderResult, logger *slog.Logger) error
+	HandleStitchingResult(ctx context.Context, result domain.RenderResult, logger *slog.Logger) error
 }
 
 type Consumer struct {
@@ -83,11 +83,7 @@ func (c *Consumer) Run(ctx context.Context) error {
 			}
 
 		case domain.TypeStitching:
-			jobID := result.ProjectID
-			if jobID == "" && len(result.TaskID) > 7 {
-				jobID = result.TaskID[7:]
-			}
-			if err := c.useCase.HandleStitchingResult(ctx, jobID, result, c.logger); err != nil {
+			if err := c.useCase.HandleStitchingResult(ctx, result, c.logger); err != nil {
 				c.logger.Error("failed to handle stitching result", slog.Any("error", err))
 			}
 

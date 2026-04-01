@@ -226,15 +226,19 @@ func TestJobUseCase_HandleTaskResult(t *testing.T) {
 	})
 
 	t.Run("StitchingResult_FinalizesJob", func(t *testing.T) {
+		jobID := "job-1"
+		taskID := "stitch-task-uuid"
 		stitchResult := domain.RenderResult{
-			TaskID:     "stitch-job-1",
+			TaskID:     taskID,
 			Type:       domain.TypeStitching,
 			Status:     domain.StatusCompleted,
 			ResultPath: "s3://final/video.mp4",
 		}
+
+		mockTaskRepo.On("UpdateTaskStatus", ctx, taskID, domain.StatusCompleted, "", stitchResult.ResultPath).Return(jobID, nil).Once()
 		mockJobRepo.On("UpdateJobResult", ctx, jobID, domain.StatusCompleted, stitchResult.ResultPath).Return(nil).Once()
 
-		err := uc.HandleStitchingResult(ctx, jobID, stitchResult, slog.Default())
+		err := uc.HandleStitchingResult(ctx, stitchResult, slog.Default())
 		assert.NoError(t, err)
 	})
 

@@ -11,7 +11,8 @@
       "unassigned": "не назначен",
       "rendering_preview": "Генерация превью...",
       "workers": "Воркеров",
-      "frames": "Кадры"
+      "frames": "Кадры",
+      "retry": "Повторить попытку"
     },
     "jobs_page": {
       "title": "Дашборд рендеринга",
@@ -80,7 +81,8 @@
       "unassigned": "unassigned",
       "rendering_preview": "Rendering preview...",
       "workers": "Workers",
-      "frames": "Frames"
+      "frames": "Frames",
+      "retry": "Retry Task"
     },
     "jobs_page": {
       "title": "Render Dashboard",

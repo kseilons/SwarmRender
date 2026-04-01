@@ -6,9 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"kseilons/stitching-service/internall/config"
+
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"kseilons/stitching-service/internall/config"
 )
 
 type Client interface {
@@ -40,7 +41,7 @@ func NewMinioRepository(cfg config.MinioConfig) (*MinioRepository, error) {
 }
 
 func (r *MinioRepository) DownloadFrames(ctx context.Context, projectID string, destDir string) error {
-	prefix := fmt.Sprintf("%s/output/", projectID)
+	prefix := fmt.Sprintf("%s_results/", projectID)
 	objectCh := r.client.ListObjects(ctx, r.bucket, minio.ListObjectsOptions{
 		Prefix:    prefix,
 		Recursive: true,
@@ -69,7 +70,7 @@ func (r *MinioRepository) DownloadFrames(ctx context.Context, projectID string, 
 }
 
 func (r *MinioRepository) UploadFinalVideo(ctx context.Context, projectID string, filePath string) (string, error) {
-	objectName := fmt.Sprintf("%s/final.mp4", projectID)
+	objectName := fmt.Sprintf("%s_final.mp4", projectID)
 	_, err := r.client.FPutObject(ctx, r.outputBucket, objectName, filePath, minio.PutObjectOptions{
 		ContentType: "video/mp4",
 	})

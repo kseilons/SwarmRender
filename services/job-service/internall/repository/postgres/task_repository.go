@@ -40,7 +40,7 @@ func (r *TaskRepository) CreateTasks(ctx context.Context, tasks []domain.Task) e
 }
 
 func (r *TaskRepository) GetTasksByJobID(ctx context.Context, jobID string) ([]domain.Task, error) {
-	query := `SELECT id, job_id, frame_start, frame_end, status, worker_id, result_path, created_at, updated_at FROM tasks WHERE job_id = $1`
+	query := `SELECT id, job_id, frame_start, frame_end, status, worker_id, result_path, retry_count, created_at, updated_at FROM tasks WHERE job_id = $1`
 	rows, err := r.pool.Query(ctx, query, jobID)
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func (r *TaskRepository) GetTasksByJobID(ctx context.Context, jobID string) ([]d
 	var tasks []domain.Task
 	for rows.Next() {
 		var t domain.Task
-		err := rows.Scan(&t.ID, &t.JobID, &t.FrameStart, &t.FrameEnd, &t.Status, &t.WorkerID, &t.ResultPath, &t.CreatedAt, &t.UpdatedAt)
+		err := rows.Scan(&t.ID, &t.JobID, &t.FrameStart, &t.FrameEnd, &t.Status, &t.WorkerID, &t.ResultPath, &t.RetryCount, &t.CreatedAt, &t.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -84,4 +84,28 @@ func (r *TaskRepository) GetJobTasksStatus(ctx context.Context, jobID string) (m
 		stats[domain.Status(status)] = count
 	}
 	return stats, nil
+}
+func (r *TaskRepository) ResetFailedTasks(ctx context.Context, jobID string) ([]domain.Task, error) {
+	query := `
+		UPDATE tasks 
+		SET status = 'CREATED', worker_id = NULL, result_path = NULL, retry_count = retry_count + 1, updated_at = NOW() 
+		WHERE job_id = $1 AND status = 'FAILED'
+		RETURNING id, job_id, frame_start, frame_end, status, worker_id, result_path, retry_count, created_at, updated_at
+	`
+	rows, err := r.pool.Query(ctx, query, jobID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tasks []domain.Task
+	for rows.Next() {
+		var t domain.Task
+		err := rows.Scan(&t.ID, &t.JobID, &t.FrameStart, &t.FrameEnd, &t.Status, &t.WorkerID, &t.ResultPath, &t.RetryCount, &t.CreatedAt, &t.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		tasks = append(tasks, t)
+	}
+	return tasks, nil
 }

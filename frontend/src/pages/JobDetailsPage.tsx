@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { jobService } from '../services/api';
 import { wsService } from '../services/ws';
-import { ChevronLeft, Cpu, HardDrive, Layout, Maximize2, RefreshCw } from 'lucide-react';
+import { ChevronLeft, Cpu, HardDrive, Layout, Maximize2, RefreshCw, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { useTranslation } from '../context/LanguageContext';
@@ -30,6 +30,18 @@ const JobDetailsPage: React.FC = () => {
     enabled: !!id,
   });
 
+  const { job, tasks } = data || { job: null, tasks: [] };
+
+  const retryMutation = useMutation({
+    mutationFn: () => jobService.retryJob(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['job', id] });
+    },
+  });
+
+  const hasFailedTasks = tasks?.some(t => t.status === 'FAILED');
+  const canRetry = job?.status === 'FAILED' || hasFailedTasks;
+
   // WebSocket Subscription
   useEffect(() => {
     const unsubscribe = wsService.subscribe((msg) => {
@@ -45,9 +57,7 @@ const JobDetailsPage: React.FC = () => {
   }, [id, queryClient]);
 
   if (isLoading) return <div className="p-20 text-center animate-pulse text-white/20 uppercase tracking-widest font-bold">{t('common.loading')}</div>;
-  if (error || !data) return <div className="p-20 text-center text-rose-400">{t('common.error_loading')}</div>;
-
-  const { job, tasks } = data;
+  if (error || !data || !job) return <div className="p-20 text-center text-rose-400">{t('common.error_loading')}</div>;
 
   return (
     <motion.div 
@@ -61,7 +71,20 @@ const JobDetailsPage: React.FC = () => {
           <ChevronLeft size={18} /> {t('common.back')}
         </Link>
         <div className="flex gap-2">
-          <button className="glass glass-interactive p-2 text-white/60 hover:text-white border-none bg-transparent cursor-pointer">
+          {canRetry && (
+            <button 
+              onClick={() => retryMutation.mutate()}
+              disabled={retryMutation.isPending}
+              className="glass glass-interactive px-4 py-2 text-rose-400 hover:text-rose-300 border-none bg-rose-500/10 cursor-pointer flex items-center gap-2 text-sm font-bold"
+            >
+              {retryMutation.isPending ? <RefreshCw size={18} className="animate-spin" /> : <RotateCcw size={18} />}
+              {t('common.retry')}
+            </button>
+          )}
+          <button 
+            onClick={() => queryClient.invalidateQueries({ queryKey: ['job', id] })}
+            className="glass glass-interactive p-2 text-white/60 hover:text-white border-none bg-transparent cursor-pointer"
+          >
             <RefreshCw size={18} />
           </button>
         </div>
@@ -111,8 +134,8 @@ const JobDetailsPage: React.FC = () => {
            <div className="glass p-6 bg-cyan-500/5 border-cyan-500/20">
               <h3 className="text-sm font-bold uppercase tracking-widest text-cyan-400 mb-4 opacity-70">{t('job_details.progress_trace')}</h3>
               <div className="flex items-end gap-1 h-20">
-                {tasks.map((_, i) => (
-                    <div key={i} className={`flex-1 rounded-sm w-full h-${Math.random() > 0.5 ? 'full' : '1/2'} ${_.status === 'COMPLETED' ? 'bg-emerald-500' : _.status === 'PROCESSING' ? 'bg-cyan-500 pulsing' : 'bg-white/5'}`}></div>
+                {tasks.map((task: any, i: number) => (
+                    <div key={i} className={`flex-1 rounded-sm w-full h-${Math.random() > 0.5 ? 'full' : '1/2'} ${task.status === 'COMPLETED' ? 'bg-emerald-500' : task.status === 'PROCESSING' ? 'bg-cyan-500 pulsing' : 'bg-white/5'}`}></div>
                 ))}
               </div>
               <div className="flex justify-between mt-4 text-[10px] uppercase font-bold text-white/30 tracking-tighter">
@@ -163,7 +186,12 @@ const JobDetailsPage: React.FC = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <div className={`w-2 h-2 rounded-full ${task.worker_id ? 'bg-emerald-500' : 'bg-white/10'}`}></div>
-                        <span className="text-xs font-mono text-white/40">{task.worker_id || t('common.unassigned')}</span>
+                        <div className="flex flex-col">
+                           <span className="text-xs font-mono text-white/40">{task.worker_id || t('common.unassigned')}</span>
+                           {task.retry_count > 0 && (
+                             <span className="text-[9px] text-rose-500/50 uppercase font-bold">Retries: {task.retry_count}</span>
+                           )}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right text-xs text-white/20 font-mono">

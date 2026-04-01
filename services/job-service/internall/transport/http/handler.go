@@ -16,6 +16,7 @@ type JobUseCase interface {
 	GetJob(ctx context.Context, id string) (domain.JobResponse, error)
 	ListJobs(ctx context.Context) ([]domain.Job, error)
 	GenerateUploadURL(ctx context.Context, filename string, projectID string) (string, string, error)
+	RetryJob(ctx context.Context, id string, logger *slog.Logger) error
 }
 
 type Handler struct {
@@ -34,6 +35,7 @@ func (h *Handler) Register(r *gin.Engine) {
 	r.POST("/jobs", h.CreateJob)
 	r.GET("/jobs", h.ListJobs)
 	r.GET("/jobs/:id", h.GetJob)
+	r.POST("/jobs/:id/retry", h.RetryJob)
 	r.GET("/jobs/upload-url", h.GenerateUploadURL)
 	r.GET("/ws", h.HandleWS)
 }
@@ -99,6 +101,21 @@ func (h *Handler) GenerateUploadURL(c *gin.Context) {
 		"upload_url": url,
 		"s3_path":    s3Path,
 	})
+}
+
+func (h *Handler) RetryJob(c *gin.Context) {
+	id := c.Param("id")
+	logger := slog.Default().With(slog.String("job_id", id))
+	logger.Info("received job retry request")
+
+	err := h.useCase.RetryJob(c.Request.Context(), id, logger)
+	if err != nil {
+		logger.Error("failed to retry job", slog.Any("error", err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusAccepted, gin.H{"message": "retry initiated"})
 }
 
 func (h *Handler) HandleWS(c *gin.Context) {

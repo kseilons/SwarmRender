@@ -73,6 +73,7 @@ type Task struct {
 	Status     Status    `json:"status"`
 	WorkerID   string    `json:"worker_id,omitempty"`
 	ResultPath string    `json:"result_path,omitempty"`
+	RetryCount int       `json:"retry_count"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 }

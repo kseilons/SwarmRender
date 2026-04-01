@@ -27,6 +27,7 @@ type TaskRepository interface {
 	GetTasksByJobID(ctx context.Context, jobID string) ([]domain.Task, error)
 	UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID string, resultPath string) (string, error)
 	GetJobTasksStatus(ctx context.Context, jobID string) (map[domain.Status]int, error)
+	ResetFailedTasks(ctx context.Context, jobID string) ([]domain.Task, error)
 }
 
 type TaskProducer interface {
@@ -273,10 +274,26 @@ func (uc *JobUseCase) HandleTaskResult(ctx context.Context, result domain.Render
 }
 
 func (uc *JobUseCase) StartStitching(ctx context.Context, job domain.Job, logger *slog.Logger) error {
+	stitchingTaskID := uuid.New().String()
+
+	dbTask := domain.Task{
+		ID:         stitchingTaskID,
+		JobID:      job.ID,
+		FrameStart: job.FrameStart, // Use job frames for reference
+		FrameEnd:   job.FrameEnd,
+		Status:     domain.StatusStitching,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
+
+	if err := uc.taskRepo.CreateTasks(ctx, []domain.Task{dbTask}); err != nil {
+		logger.Error("failed to create stitching task record", slog.Any("error", err))
+	}
+
 	task := domain.StitchingTask{
 		BaseTask: domain.BaseTask{
 			ProjectID: extractProjectID(job.S3Path),
-			TaskID:    fmt.Sprintf("stitch-%s", job.ID),
+			TaskID:    stitchingTaskID,
 		},
 		S3Path:     job.S3Path,
 		FrameStart: job.FrameStart,
@@ -305,14 +322,31 @@ func (uc *JobUseCase) StartStitching(ctx context.Context, job domain.Job, logger
 	return nil
 }
 
-func (uc *JobUseCase) HandleStitchingResult(ctx context.Context, jobID string, result domain.RenderResult, logger *slog.Logger) error {
+func (uc *JobUseCase) HandleStitchingResult(ctx context.Context, result domain.RenderResult, logger *slog.Logger) error {
 	logger.Info("handling stitching result",
-		slog.String("job_id", jobID),
+		slog.String("task_id", result.TaskID),
 		slog.String("status", string(result.Status)),
 		slog.String("result_path", result.ResultPath),
 	)
 
-	err := uc.jobRepo.UpdateJobResult(ctx, jobID, result.Status, result.ResultPath)
+	jobID, err := uc.taskRepo.UpdateTaskStatus(ctx, result.TaskID, result.Status, result.WorkerID, result.ResultPath)
+	if err != nil {
+		logger.Error("failed to update stitching task in tasks table", slog.Any("error", err))
+	}
+
+	if uc.hub != nil {
+		uc.hub.BroadcastStatusUpdate(map[string]any{
+			"type":    "task_update",
+			"task_id": result.TaskID,
+			"status":  result.Status,
+		})
+	}
+
+	if jobID == "" {
+		jobID = result.ProjectID
+	}
+
+	err = uc.jobRepo.UpdateJobResult(ctx, jobID, result.Status, result.ResultPath)
 	if err == nil && uc.hub != nil {
 		uc.hub.BroadcastStatusUpdate(map[string]any{
 			"type":        "job_update",
@@ -367,6 +401,48 @@ func (uc *JobUseCase) GetJob(ctx context.Context, id string) (domain.JobResponse
 
 func (uc *JobUseCase) ListJobs(ctx context.Context) ([]domain.Job, error) {
 	return uc.jobRepo.ListJobs(ctx)
+}
+
+func (uc *JobUseCase) RetryJob(ctx context.Context, jobID string, logger *slog.Logger) error {
+	logger.Info("retrying failed tasks for job", slog.String("job_id", jobID))
+
+	job, err := uc.jobRepo.GetJob(ctx, jobID)
+	if err != nil {
+		return fmt.Errorf("failed to get job: %w", err)
+	}
+
+	resetTasks, err := uc.taskRepo.ResetFailedTasks(ctx, jobID)
+	if err != nil {
+		return fmt.Errorf("failed to reset failed tasks: %w", err)
+	}
+
+	if len(resetTasks) == 0 {
+		logger.Info("no failed tasks to retry", slog.String("job_id", jobID))
+		return nil
+	}
+
+	// Send to Kafka
+	topic := uc.kafkaCfg.RenderTopic
+	for _, t := range resetTasks {
+		renderTask := domain.RenderTask{
+			BaseTask: domain.BaseTask{
+				ProjectID: extractProjectID(job.S3Path),
+				TaskID:    t.ID,
+			},
+			CommonTask: domain.CommonTask{
+				StartFrame: t.FrameStart,
+				EndFrame:   t.FrameEnd,
+				Options:    job.Options,
+			},
+			BlendFile: job.S3Path,
+		}
+
+		if err := uc.producer.SendTask(ctx, job.ID, renderTask, topic); err != nil {
+			logger.Error("failed to re-send render task", slog.String("task_id", t.ID), slog.Any("error", err))
+		}
+	}
+
+	return uc.UpdateJobStatus(ctx, job.ID, domain.StatusProcessing, logger)
 }
 
 func (uc *JobUseCase) GenerateUploadURL(ctx context.Context, filename string, projectID string) (string, string, error) {

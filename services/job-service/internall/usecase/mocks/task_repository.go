@@ -92,6 +92,36 @@ func (_m *TaskRepository) GetTasksByJobID(ctx context.Context, jobID string) ([]
 	return r0, r1
 }
 
+// ResetFailedTasks provides a mock function with given fields: ctx, jobID
+func (_m *TaskRepository) ResetFailedTasks(ctx context.Context, jobID string) ([]domain.Task, error) {
+	ret := _m.Called(ctx, jobID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ResetFailedTasks")
+	}
+
+	var r0 []domain.Task
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) ([]domain.Task, error)); ok {
+		return rf(ctx, jobID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) []domain.Task); ok {
+		r0 = rf(ctx, jobID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]domain.Task)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, jobID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // UpdateTaskStatus provides a mock function with given fields: ctx, id, status, workerID, resultPath
 func (_m *TaskRepository) UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID string, resultPath string) (string, error) {
 	ret := _m.Called(ctx, id, status, workerID, resultPath)

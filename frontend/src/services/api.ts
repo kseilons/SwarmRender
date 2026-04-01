@@ -41,6 +41,7 @@ export interface Task {
   status: Status;
   worker_id?: string;
   result_path?: string;
+  retry_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -97,6 +98,9 @@ export const jobService = {
         'Content-Type': file.type || 'application/octet-stream',
       },
     });
+  },
+  retryJob: async (id: string): Promise<void> => {
+    await api.post(`/jobs/${id}/retry`);
   },
   getStats: async (): Promise<ClusterStats> => {
     const { data } = await api.get<ClusterStats>('/stats');
