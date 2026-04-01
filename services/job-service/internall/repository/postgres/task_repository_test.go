@@ -47,6 +47,7 @@ func TestTaskRepository_Integration(t *testing.T) {
 		{
 			ID:         uuid.New().String(),
 			JobID:      jobID,
+			Type:       domain.TypeRender,
 			FrameStart: 1,
 			FrameEnd:   50,
 			Status:     domain.StatusCreated,
@@ -56,6 +57,7 @@ func TestTaskRepository_Integration(t *testing.T) {
 		{
 			ID:         uuid.New().String(),
 			JobID:      jobID,
+			Type:       domain.TypeRender,
 			FrameStart: 51,
 			FrameEnd:   100,
 			Status:     domain.StatusCreated,
@@ -77,7 +79,7 @@ func TestTaskRepository_Integration(t *testing.T) {
 
 	t.Run("UpdateTaskStatus", func(t *testing.T) {
 		taskID := tasks[0].ID
-		err := taskRepo.UpdateTaskStatus(ctx, taskID, domain.StatusCompleted, "worker-1", "s3://results/part1.mp4")
+		_, err := taskRepo.UpdateTaskStatus(ctx, taskID, domain.StatusCompleted, "worker-1", "s3://results/part1.mp4")
 		assert.NoError(t, err)
 
 		savedTasks, _ := taskRepo.GetTasksByJobID(ctx, jobID)

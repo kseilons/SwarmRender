@@ -159,6 +159,7 @@ func (uc *JobUseCase) SplitJobIntoTasks(ctx context.Context, job domain.Job, log
 		task := domain.Task{
 			ID:         uuid.New().String(),
 			JobID:      job.ID,
+			Type:       domain.TypeRender,
 			FrameStart: currentFrame,
 			FrameEnd:   endFrame,
 			Status:     domain.StatusCreated,
@@ -279,6 +280,7 @@ func (uc *JobUseCase) StartStitching(ctx context.Context, job domain.Job, logger
 	dbTask := domain.Task{
 		ID:         stitchingTaskID,
 		JobID:      job.ID,
+		Type:       domain.TypeStitching,
 		FrameStart: job.FrameStart, // Use job frames for reference
 		FrameEnd:   job.FrameEnd,
 		Status:     domain.StatusStitching,

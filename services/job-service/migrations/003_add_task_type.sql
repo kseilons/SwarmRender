@@ -1,0 +1,7 @@
+CREATE TYPE task_type AS ENUM (
+    'RENDER',
+    'STITCHING',
+    'METADATA'
+);
+
+ALTER TABLE tasks ADD COLUMN type task_type NOT NULL DEFAULT 'RENDER';

@@ -68,6 +68,7 @@ type Job struct {
 type Task struct {
 	ID         string    `json:"id"`
 	JobID      string    `json:"job_id"`
+	Type       TaskType  `json:"type"`
 	FrameStart int       `json:"frame_start"`
 	FrameEnd   int       `json:"frame_end"`
 	Status     Status    `json:"status"`
