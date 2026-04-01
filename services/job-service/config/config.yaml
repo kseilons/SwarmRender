@@ -11,7 +11,16 @@ database:
   sslmode: "disable"
 kafka:
   brokers: ["localhost:9092"]
-  task_topic: "render-tasks"
+  render_topic: "render-tasks"
   metadata_topic: "metadata-tasks"
+  stitching_topic: "stitching-tasks"
   result_topic: "render-results"
   result_group_id: "job-service-results"
+minio:
+  endpoint: "localhost:9000"
+  access_key: "admin"
+  secret_key: "password"
+  use_ssl: false
+  bucket: "blender-renders"
+  presigned_expiry: 3600
+

@@ -12,5 +12,14 @@ kafka:
   brokers: ["localhost:9092"]
   render_topic: "test-render-tasks"
   metadata_topic: "test-metadata-tasks"
+  stitching_topic: "test-stitching-tasks"
   result_topic: "test-render-results"
   result_group_id: "test-job-service-results"
+minio:
+  endpoint: "localhost:9000"
+  access_key: "admin"
+  secret_key: "password"
+  use_ssl: false
+  bucket: "test-projects"
+  presigned_expiry: 3600
+

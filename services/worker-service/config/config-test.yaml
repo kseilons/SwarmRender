@@ -5,8 +5,11 @@ blender:
   threads: 1
 kafka:
   brokers: ["localhost:9092"]
-  topic: "test-render-tasks"
+  render_topic: "test-render-tasks"
+  metadata_topic: "test-metadata-tasks"
+  result_topic: "test-render-results"
   group_id: "test-worker-service"
+
 minio:
   endpoint: "localhost:9000"
   access_key: "admin"

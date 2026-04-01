@@ -14,7 +14,9 @@ kafka:
     - "localhost:9092"
   render_topic: "render-tasks"
   metadata_topic: "metadata-tasks"
+  result_topic: "render-results"
   group_id: "worker-service"
+
 minio:
   endpoint: "localhost:9000"
   access_key: "admin"
