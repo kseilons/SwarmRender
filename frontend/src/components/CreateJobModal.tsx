@@ -17,6 +17,7 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [fileCount, setFileCount] = useState(0);
+  const [blendFiles, setBlendFiles] = useState<{ name: string, s3Path: string, size: number }[]>([]);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState<CreateJobRequest>({
@@ -64,10 +65,12 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
     setFileCount(files.length);
 
     let uploadedCount = 0;
-    let mainBlendFile = '';
+    setBlendFiles([]);
+    setFormData(prev => ({ ...prev, s3_path: '' }));
 
     try {
       const projectId = self.crypto.randomUUID();
+      let largestFile = { s3Path: '', size: 0 };
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const relativePath = file.webkitRelativePath || file.name;
@@ -78,28 +81,27 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
           continue;
         }
 
-        // Try to find the main .blend file
-        // Prefer one in the root, or just the first .blend found
-        if (file.name.endsWith('.blend')) {
-          if (!mainBlendFile || !relativePath.includes('/')) {
-            mainBlendFile = relativePath;
-          }
-        }
-
         // 1. Get signed URL with project_id
         const { upload_url, s3_path } = await jobService.getUploadUrl(relativePath, projectId);
         
         // 2. Upload to S3
         await jobService.uploadFileToS3(upload_url, file);
 
+        // Keep track of all .blend files found
+        if (file.name.endsWith('.blend')) {
+          setBlendFiles(prev => [...prev, { name: relativePath, s3Path: s3_path, size: file.size }]);
+          if (file.size > largestFile.size) {
+            largestFile = { s3Path: s3_path, size: file.size };
+          }
+        }
+
         uploadedCount++;
         setUploadProgress(Math.round((uploadedCount / files.length) * 100));
-        
-        // If it's the main blend file, we eventually use its specific s3_path suffix 
-        // to tell the backend which file to open
-        if (relativePath === mainBlendFile) {
-          setFormData(prev => ({ ...prev, s3_path }));
-        }
+      }
+
+      // Automatically select the largest file by default
+      if (largestFile.s3Path) {
+        setFormData(prev => ({ ...prev, s3_path: largestFile.s3Path }));
       }
 
       // If no main file detected or multiple, the last 's3_path' updated in the loop 
@@ -212,6 +214,28 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
                       )}
                     </div>
                   </div>
+
+                  {blendFiles.length > 1 && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="form-group"
+                    >
+                      <label className="form-label">{t('create_modal.field_main_file')}</label>
+                      <select 
+                        className="form-input"
+                        value={formData.s3_path}
+                        onChange={e => setFormData({...formData, s3_path: e.target.value})}
+                      >
+                        <option value="" disabled>{t('common.unassigned')}</option>
+                        {blendFiles.map((file, idx) => (
+                          <option key={idx} value={file.s3Path}>
+                            {file.name}
+                          </option>
+                        ))}
+                      </select>
+                    </motion.div>
+                  )}
                 </div>
 
                 <div className="flex justify-end pt-4">
