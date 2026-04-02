@@ -38,9 +38,11 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
           animate={{ width: `${percentage}%` }}
           style={{ 
             backgroundColor: color,
-            background: `linear-gradient(90deg, ${color}, ${color}dd)` 
+            opacity: 0.9,
+            // Use a simpler background since CSS hex with 'dd' is unreliable if color is a var
+            background: color.startsWith('#') ? `linear-gradient(90deg, ${color}, ${color}dd)` : color
           }}
-          transition={{ duration: 1, ease: "easeOut" }}
+          transition={{ duration: 0.8, ease: "circOut" }}
         />
       </div>
 

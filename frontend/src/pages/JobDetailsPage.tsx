@@ -139,9 +139,16 @@ const JobDetailsPage: React.FC = () => {
             <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
 
             <div className="flex flex-col md:flex-row gap-8 relative z-10">
-              {/* Preview Image */}
+              {/* Preview Image / Video */}
               <div className="w-full md:w-72 aspect-video md:aspect-square bg-zinc-900 rounded-2xl overflow-hidden glass border-white/5 group relative flex-shrink-0">
-                {job.preview_url ? (
+                {job.status === 'COMPLETED' && job.result_path?.toLowerCase().endsWith('.mp4') ? (
+                  <video 
+                    src={job.result_path} 
+                    controls 
+                    className="w-full h-full object-cover"
+                    poster={job.preview_url}
+                  />
+                ) : job.preview_url ? (
                   <img src={job.preview_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="Job Preview" />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-white/5 space-y-3 bg-gradient-to-br from-zinc-900 to-black">
@@ -244,8 +251,8 @@ const JobDetailsPage: React.FC = () => {
  
                 const taskTotal = task.frame_end - task.frame_start + 1;
                 const taskCurrent = task.status === 'COMPLETED' ? taskTotal : 
-                                    Math.max(0, (task.current_frame || task.frame_start) - task.frame_start + 1);
-                const progressRatio = taskCurrent / taskTotal;
+                                    (task.current_frame && task.current_frame >= task.frame_start ? (task.current_frame - task.frame_start + 1) : 0);
+                const progressRatio = taskTotal > 0 ? taskCurrent / taskTotal : 0;
  
                 return (
                   <motion.div
@@ -346,7 +353,7 @@ const JobDetailsPage: React.FC = () => {
                       </td>
                       <td className="px-8 py-6 min-w-[150px]">
                         <ProgressBar 
-                          current={task.status === 'COMPLETED' ? (task.frame_end - task.frame_start + 1) : Math.max(0, (task.current_frame || task.frame_start) - task.frame_start + 1)}
+                          current={task.status === 'COMPLETED' ? (task.frame_end - task.frame_start + 1) : (task.current_frame && task.current_frame >= task.frame_start ? (task.current_frame - task.frame_start + 1) : 0)}
                           total={task.frame_end - task.frame_start + 1}
                           height={4}
                           showStats={true}
