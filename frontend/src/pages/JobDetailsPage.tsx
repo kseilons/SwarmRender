@@ -6,6 +6,7 @@ import { wsService } from '../services/ws';
 import { ChevronLeft, Cpu, HardDrive, Layout, Maximize2, RefreshCw, RotateCcw, Layers, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ProgressBar from '../components/common/ProgressBar';
+import PreviewPlaceholder from '../components/common/PreviewPlaceholder';
 
 import { useTranslation } from '../context/LanguageContext';
 
@@ -151,10 +152,7 @@ const JobDetailsPage: React.FC = () => {
                 ) : job.preview_url ? (
                   <img src={job.preview_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="Job Preview" />
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-white/5 space-y-3 bg-gradient-to-br from-zinc-900 to-black">
-                    <Layout size={48} strokeWidth={1} className="text-cyan-500/20" />
-                    <div className="italic text-[11px] uppercase tracking-[0.2em] font-black text-cyan-400/30">{t('common.rendering_preview')}</div>
-                  </div>
+                  <PreviewPlaceholder name={job.name} size="lg" />
                 )}
                 <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button className="bg-black/60 backdrop-blur-md p-2 rounded-xl hover:bg-black transition-colors border-none text-white cursor-pointer shadow-xl">

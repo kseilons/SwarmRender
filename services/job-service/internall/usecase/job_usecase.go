@@ -490,14 +490,13 @@ func (uc *JobUseCase) generatePreview(ctx context.Context, job domain.Job, task 
 		return
 	}
 	projectID := extractProjectID(job.S3Path)
-	// Example: projectID_results/Scene_0001.png
-	scene := "Scene"
+	scenePrefix := ""
 	if job.Options.Scene != "" {
-		scene = job.Options.Scene
+		scenePrefix = fmt.Sprintf("%s_", job.Options.Scene)
 	}
 
 	frameNum := task.FrameStart
-	srcKey := fmt.Sprintf("%s_results/%s_%04d.png", projectID, scene, frameNum)
+	srcKey := fmt.Sprintf("%s_results/%s%04d.png", projectID, scenePrefix, frameNum)
 	dstKey := fmt.Sprintf("%s_preview.png", projectID)
 
 	logger.Info("generating preview", slog.String("src", srcKey), slog.String("dst", dstKey))
@@ -523,6 +522,18 @@ func (uc *JobUseCase) ListJobs(ctx context.Context) ([]domain.Job, error) {
 			url, err := uc.minioRepo.GenerateDownloadURL(ctx, *jobs[i].PreviewURL)
 			if err == nil {
 				jobs[i].PreviewURL = &url
+			}
+		}
+		if jobs[i].ResultPath != nil && *jobs[i].ResultPath != "" && !strings.HasPrefix(*jobs[i].ResultPath, "http") {
+			key := strings.TrimPrefix(*jobs[i].ResultPath, "s3://")
+			// Remove bucket name from key if it's a full s3:// URL
+			parts := strings.SplitN(key, "/", 2)
+			if len(parts) == 2 {
+				key = parts[1]
+			}
+			url, err := uc.minioRepo.GenerateDownloadURL(ctx, key)
+			if err == nil {
+				jobs[i].ResultPath = &url
 			}
 		}
 	}
