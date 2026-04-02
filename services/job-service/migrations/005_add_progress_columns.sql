@@ -1,2 +1,0 @@
-ALTER TABLE tasks ADD COLUMN current_frame INTEGER DEFAULT 0;
-ALTER TABLE jobs ADD COLUMN completed_frames INTEGER DEFAULT 0;

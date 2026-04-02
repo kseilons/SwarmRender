@@ -1,1 +1,0 @@
-ALTER TABLE tasks_history ADD COLUMN IF NOT EXISTS type task_type NOT NULL DEFAULT 'RENDER';
