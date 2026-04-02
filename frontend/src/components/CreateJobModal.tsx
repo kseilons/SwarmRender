@@ -56,7 +56,7 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
     }
   });
 
-  const onFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -103,10 +103,14 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
       if (largestFile.mainFileURL) {
         setFormData(prev => ({ ...prev, main_file_url: largestFile.mainFileURL }));
       }
-
-      // If no main file detected or multiple, the last 's3_path' updated in the loop 
-      // will be the one. But ideally we want the .blend file's path.
-      // The backend 's3_path' from /upload-url already includes the project-specific uuid prefix.
+      
+      // If we only have ONE blend file, select it automatically anyway
+      setBlendFiles(prev => {
+        if (prev.length === 1 && !largestFile.mainFileURL) {
+          setFormData(f => ({ ...f, main_file_url: prev[0].mainFileURL }));
+        }
+        return prev;
+      });
       
     } catch (error) {
       console.error('Upload failed:', error);
@@ -183,7 +187,7 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
                         type="file" 
                         ref={fileInputRef}
                         className="hidden"
-                        onChange={onFileSelect}
+                        onChange={handleFileChange}
                         {...({ webkitdirectory: "", directory: "" } as any)}
                       />
                       {isUploading ? (
@@ -209,7 +213,7 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
                              <Folder size={24} style={{opacity: 0.3}} />
                           </div>
                           <span className="text-sm font-medium">{t('create_modal.upload_instruction')}</span>
-                          <span className="text-[10px] text-white/20 uppercase tracking-tighter mt-1">Single folder with all project assets</span>
+                          <span className="text-[10px] text-white/20 uppercase tracking-tighter mt-1">{t('create_modal.upload_hint')}</span>
                         </>
                       )}
                     </div>

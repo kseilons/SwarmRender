@@ -98,8 +98,8 @@ func (h *Handler) GenerateUploadURL(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"upload_url": url,
-		"s3_path":    s3Path,
+		"upload_url":    url,
+		"main_file_url": s3Path,
 	})
 }
 
