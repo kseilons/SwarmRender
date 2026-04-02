@@ -42,7 +42,9 @@
       "th_sync": "Синхронизация",
       "progress_trace": "Прогресс выполнения",
       "realtime_cluster_metrics": "Метрики кластера в реальном времени",
-      "active_graph": "График активной производительности"
+      "active_graph": "График активной производительности",
+      "blender_logs": "Логи рендеринга Blender",
+      "show_logs": "Показать логи"
     },
     "create_modal": {
       "title": "Новый проект рендеринга",
@@ -126,7 +128,9 @@
       "th_sync": "Synchronization",
       "progress_trace": "Progress Trace",
       "realtime_cluster_metrics": "Realtime Cluster Metrics",
-      "active_graph": "Active Performance Graph"
+      "active_graph": "Active Performance Graph",
+      "blender_logs": "Blender Render Logs",
+      "show_logs": "Show Logs"
     },
     "create_modal": {
       "title": "New Rendering Project",

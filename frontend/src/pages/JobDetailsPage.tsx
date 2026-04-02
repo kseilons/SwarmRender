@@ -3,12 +3,64 @@ import { useParams, Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { jobService } from '../services/api';
 import { wsService } from '../services/ws';
-import { ChevronLeft, Cpu, HardDrive, Layout, Maximize2, RefreshCw, RotateCcw, Layers, Download } from 'lucide-react';
+import { ChevronLeft, Cpu, HardDrive, Layout, Maximize2, RefreshCw, RotateCcw, Layers, Download, FileText, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ProgressBar from '../components/common/ProgressBar';
 import PreviewPlaceholder from '../components/common/PreviewPlaceholder';
 
 import { useTranslation } from '../context/LanguageContext';
+
+const LogModal: React.FC<{ logs: string; onClose: () => void; taskID: string }> = ({ logs, onClose, taskID }) => {
+  const { t } = useTranslation();
+  
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-black/80 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div 
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        className="glass w-full max-w-4xl max-h-[80vh] flex flex-col overflow-hidden bg-zinc-950 border-white/5 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-500">
+              <FileText size={20} />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white leading-tight">{t('job_details.blender_logs')}</h3>
+              <p className="text-xs text-white/40 font-mono">Task ID: {taskID}</p>
+            </div>
+          </div>
+          <button 
+            onClick={onClose}
+            className="p-2 hover:bg-white/5 rounded-lg text-white/40 hover:text-white transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        <div className="flex-1 overflow-auto p-6 font-mono text-[13px] leading-relaxed text-zinc-300 selection:bg-cyan-500/30">
+          <pre className="whitespace-pre-wrap break-all">
+            {logs || 'No logs available for this task.'}
+          </pre>
+        </div>
+        <div className="p-4 border-t border-white/5 bg-white/[0.01] flex justify-end">
+          <button 
+            onClick={onClose}
+            className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white text-sm font-bold rounded-xl transition-colors border border-white/5"
+          >
+            {t('common.close') || 'Close'}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
 
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const { t } = useTranslation();
@@ -25,6 +77,7 @@ const JobDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const { t } = useTranslation();
+  const [selectedTaskLogs, setSelectedTaskLogs] = React.useState<{ logs: string; id: string } | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['job', id],
@@ -354,7 +407,18 @@ const JobDetailsPage: React.FC = () => {
                         />
                       </td>
                       <td className="px-8 py-6 text-center">
-                        <StatusBadge status={task.status} />
+                        <div className="flex flex-col items-center gap-2">
+                          <StatusBadge status={task.status} />
+                          {task.status === 'FAILED' && task.logs && (
+                            <button 
+                              onClick={() => setSelectedTaskLogs({ logs: task.logs!, id: task.id })}
+                              className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-rose-500/60 hover:text-rose-500 transition-colors"
+                            >
+                              <FileText size={12} />
+                              {t('job_details.show_logs') || 'Show Logs'}
+                            </button>
+                          )}
+                        </div>
                       </td>
                       <td className="px-8 py-6">
                         <div className="flex items-center gap-4">
@@ -385,6 +449,16 @@ const JobDetailsPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {selectedTaskLogs && (
+          <LogModal 
+            logs={selectedTaskLogs.logs} 
+            taskID={selectedTaskLogs.id}
+            onClose={() => setSelectedTaskLogs(null)} 
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

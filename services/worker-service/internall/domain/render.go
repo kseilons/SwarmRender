@@ -103,6 +103,7 @@ type RenderResult struct {
 	Status       Status           `json:"status"`
 	WorkerID     string           `json:"worker_id"`
 	Error        string           `json:"error,omitempty"`
+	Logs         string           `json:"logs,omitempty"`
 	Metadata     *ProjectMetadata `json:"metadata,omitempty"`
 	ResultURL    string           `json:"result_url,omitempty"`
 	CurrentFrame int              `json:"current_frame,omitempty"`

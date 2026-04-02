@@ -140,12 +140,12 @@ func (uc *RenderUseCase) Execute(ctx context.Context, logger *slog.Logger, task 
 	renderOutput, err := uc.renderer.Render(ctx, logger, job)
 	close(done)
 	if err != nil {
-		uc.reportError(ctx, logger, task, err)
+		uc.reportError(ctx, logger, task, err, renderOutput)
 		return renderOutput, err
 	}
 
 	if err := uc.uploadResults(ctx, logger, task.ProjectID, outputDir); err != nil {
-		uc.reportError(ctx, logger, task, err)
+		uc.reportError(ctx, logger, task, err, renderOutput)
 		return renderOutput, err
 	}
 
@@ -163,7 +163,7 @@ func (uc *RenderUseCase) Execute(ctx context.Context, logger *slog.Logger, task 
 	return renderOutput, nil
 }
 
-func (uc *RenderUseCase) reportError(ctx context.Context, logger *slog.Logger, task domain.RenderTask, err error) {
+func (uc *RenderUseCase) reportError(ctx context.Context, logger *slog.Logger, task domain.RenderTask, err error, logs []byte) {
 	reportErr := uc.resultProducer.ReportResult(ctx, domain.RenderResult{
 		TaskID:    task.TaskID,
 		ProjectID: task.ProjectID,
@@ -171,10 +171,18 @@ func (uc *RenderUseCase) reportError(ctx context.Context, logger *slog.Logger, t
 		Status:    domain.StatusFailed,
 		WorkerID:  uc.getWorkerID(),
 		Error:     err.Error(),
+		Logs:      truncateLogs(string(logs), 50000), // Keep last 50KB
 	})
 	if reportErr != nil {
 		logger.Error("failed to report failure result", slog.Any("error", reportErr))
 	}
+}
+
+func truncateLogs(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return "...[TRUNCATED]...\n" + s[len(s)-maxLen:]
 }
 
 func (uc *RenderUseCase) validate(task domain.RenderTask) error {

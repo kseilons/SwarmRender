@@ -28,7 +28,7 @@ type TaskRepository interface {
 	CreateTasks(ctx context.Context, tasks []domain.Task) error
 	GetTask(ctx context.Context, id string) (domain.Task, error)
 	GetTasksByJobID(ctx context.Context, jobID string) ([]domain.Task, error)
-	UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID *string, resultURL *string) (string, error)
+	UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID *string, resultURL *string, logs *string) (string, error)
 	UpdateTaskProgress(ctx context.Context, id string, currentFrame int) (string, domain.Status, error)
 	GetJobTasksStatus(ctx context.Context, jobID string) (map[domain.Status]int, error)
 	ResetFailedTasks(ctx context.Context, jobID string) ([]domain.Task, error)
@@ -226,7 +226,7 @@ func (uc *JobUseCase) HandleMetadataResult(ctx context.Context, jobID string, fr
 func (uc *JobUseCase) HandleTaskResult(ctx context.Context, result domain.RenderResult, logger *slog.Logger) error {
 	logger.Info("handling task result", slog.String("task_id", result.TaskID), slog.String("status", string(result.Status)))
 
-	jobID, err := uc.taskRepo.UpdateTaskStatus(ctx, result.TaskID, result.Status, result.WorkerID, result.ResultURL)
+	jobID, err := uc.taskRepo.UpdateTaskStatus(ctx, result.TaskID, result.Status, result.WorkerID, result.ResultURL, &result.Logs)
 	if err != nil {
 		logger.Error("failed to update task status", slog.Any("error", err))
 		return err
@@ -395,7 +395,7 @@ func (uc *JobUseCase) HandleStitchingResult(ctx context.Context, result domain.R
 		slog.Any("result_url", result.ResultURL),
 	)
 
-	jobID, err := uc.taskRepo.UpdateTaskStatus(ctx, result.TaskID, result.Status, result.WorkerID, result.ResultURL)
+	jobID, err := uc.taskRepo.UpdateTaskStatus(ctx, result.TaskID, result.Status, result.WorkerID, result.ResultURL, &result.Logs)
 	if err != nil {
 		logger.Error("failed to update stitching task in tasks table", slog.Any("error", err))
 	}

@@ -40,9 +40,9 @@ func (r *TaskRepository) CreateTasks(ctx context.Context, tasks []domain.Task) e
 }
 
 func (r *TaskRepository) GetTask(ctx context.Context, id string) (domain.Task, error) {
-	query := `SELECT id, job_id, type, frame_start, frame_end, status, worker_id, result_url, retry_count, current_frame, created_at, updated_at FROM tasks WHERE id = $1`
+	query := `SELECT id, job_id, type, frame_start, frame_end, status, worker_id, result_url, retry_count, current_frame, logs, created_at, updated_at FROM tasks WHERE id = $1`
 	var t domain.Task
-	err := r.pool.QueryRow(ctx, query, id).Scan(&t.ID, &t.JobID, &t.Type, &t.FrameStart, &t.FrameEnd, &t.Status, &t.WorkerID, &t.ResultURL, &t.RetryCount, &t.CurrentFrame, &t.CreatedAt, &t.UpdatedAt)
+	err := r.pool.QueryRow(ctx, query, id).Scan(&t.ID, &t.JobID, &t.Type, &t.FrameStart, &t.FrameEnd, &t.Status, &t.WorkerID, &t.ResultURL, &t.RetryCount, &t.CurrentFrame, &t.Logs, &t.CreatedAt, &t.UpdatedAt)
 	if err != nil {
 		return domain.Task{}, fmt.Errorf("failed to get task: %w", err)
 	}
@@ -50,7 +50,7 @@ func (r *TaskRepository) GetTask(ctx context.Context, id string) (domain.Task, e
 }
 
 func (r *TaskRepository) GetTasksByJobID(ctx context.Context, jobID string) ([]domain.Task, error) {
-	query := `SELECT id, job_id, type, frame_start, frame_end, status, worker_id, result_url, retry_count, current_frame, created_at, updated_at FROM tasks WHERE job_id = $1`
+	query := `SELECT id, job_id, type, frame_start, frame_end, status, worker_id, result_url, retry_count, current_frame, logs, created_at, updated_at FROM tasks WHERE job_id = $1`
 	rows, err := r.pool.Query(ctx, query, jobID)
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func (r *TaskRepository) GetTasksByJobID(ctx context.Context, jobID string) ([]d
 	var tasks []domain.Task
 	for rows.Next() {
 		var t domain.Task
-		err := rows.Scan(&t.ID, &t.JobID, &t.Type, &t.FrameStart, &t.FrameEnd, &t.Status, &t.WorkerID, &t.ResultURL, &t.RetryCount, &t.CurrentFrame, &t.CreatedAt, &t.UpdatedAt)
+		err := rows.Scan(&t.ID, &t.JobID, &t.Type, &t.FrameStart, &t.FrameEnd, &t.Status, &t.WorkerID, &t.ResultURL, &t.RetryCount, &t.CurrentFrame, &t.Logs, &t.CreatedAt, &t.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -84,10 +84,10 @@ func (r *TaskRepository) UpdateTaskProgress(ctx context.Context, id string, curr
 	return jobID, domain.Status(status), err
 }
 
-func (r *TaskRepository) UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID *string, resultURL *string) (string, error) {
-	query := `UPDATE tasks SET status = $1, worker_id = $2, result_url = $3, updated_at = NOW() WHERE id = $4 RETURNING job_id`
+func (r *TaskRepository) UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID *string, resultURL *string, logs *string) (string, error) {
+	query := `UPDATE tasks SET status = $1, worker_id = $2, result_url = $3, logs = $4, updated_at = NOW() WHERE id = $5 RETURNING job_id`
 	var jobID string
-	err := r.pool.QueryRow(ctx, query, string(status), workerID, resultURL, id).Scan(&jobID)
+	err := r.pool.QueryRow(ctx, query, string(status), workerID, resultURL, logs, id).Scan(&jobID)
 	return jobID, err
 }
 
@@ -113,9 +113,9 @@ func (r *TaskRepository) GetJobTasksStatus(ctx context.Context, jobID string) (m
 func (r *TaskRepository) ResetFailedTasks(ctx context.Context, jobID string) ([]domain.Task, error) {
 	query := `
 		UPDATE tasks 
-		SET status = 'CREATED', worker_id = NULL, result_url = NULL, retry_count = retry_count + 1, updated_at = NOW() 
+		SET status = 'CREATED', worker_id = NULL, result_url = NULL, logs = NULL, retry_count = retry_count + 1, updated_at = NOW() 
 		WHERE job_id = $1 AND status = 'FAILED'
-		RETURNING id, job_id, type, frame_start, frame_end, status, worker_id, result_url, retry_count, current_frame, created_at, updated_at
+		RETURNING id, job_id, type, frame_start, frame_end, status, worker_id, result_url, retry_count, current_frame, logs, created_at, updated_at
 	`
 	rows, err := r.pool.Query(ctx, query, jobID)
 	if err != nil {
@@ -126,7 +126,7 @@ func (r *TaskRepository) ResetFailedTasks(ctx context.Context, jobID string) ([]
 	var tasks []domain.Task
 	for rows.Next() {
 		var t domain.Task
-		err := rows.Scan(&t.ID, &t.JobID, &t.Type, &t.FrameStart, &t.FrameEnd, &t.Status, &t.WorkerID, &t.ResultURL, &t.RetryCount, &t.CurrentFrame, &t.CreatedAt, &t.UpdatedAt)
+		err := rows.Scan(&t.ID, &t.JobID, &t.Type, &t.FrameStart, &t.FrameEnd, &t.Status, &t.WorkerID, &t.ResultURL, &t.RetryCount, &t.CurrentFrame, &t.Logs, &t.CreatedAt, &t.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}

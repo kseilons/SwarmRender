@@ -44,6 +44,7 @@ export interface Task {
   current_frame: number;
   worker_id?: string;
   result_url?: string;
+  logs?: string;
   retry_count: number;
   created_at: string;
   updated_at: string;
