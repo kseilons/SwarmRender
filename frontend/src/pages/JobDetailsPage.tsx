@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { jobService } from '../services/api';
 import { wsService } from '../services/ws';
-import { ChevronLeft, Cpu, HardDrive, Layout, Maximize2, RefreshCw, RotateCcw, Layers, Download, FileText, X } from 'lucide-react';
+import { ChevronLeft, Cpu, HardDrive, Layout, RefreshCw, RotateCcw, Layers, Download, FileText, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ProgressBar from '../components/common/ProgressBar';
 import PreviewPlaceholder from '../components/common/PreviewPlaceholder';
@@ -12,16 +12,16 @@ import { useTranslation } from '../context/LanguageContext';
 
 const LogModal: React.FC<{ logs: string; onClose: () => void; taskID: string }> = ({ logs, onClose, taskID }) => {
   const { t } = useTranslation();
-  
+
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-black/80 backdrop-blur-sm"
       onClick={onClose}
     >
-      <motion.div 
+      <motion.div
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         className="glass w-full max-w-4xl max-h-[80vh] flex flex-col overflow-hidden bg-zinc-950 border-white/5 shadow-2xl"
@@ -37,7 +37,7 @@ const LogModal: React.FC<{ logs: string; onClose: () => void; taskID: string }> 
               <p className="text-xs text-white/40 font-mono">Task ID: {taskID}</p>
             </div>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 hover:bg-white/5 rounded-lg text-white/40 hover:text-white transition-colors"
           >
@@ -50,7 +50,7 @@ const LogModal: React.FC<{ logs: string; onClose: () => void; taskID: string }> 
           </pre>
         </div>
         <div className="p-4 border-t border-white/5 bg-white/[0.01] flex justify-end">
-          <button 
+          <button
             onClick={onClose}
             className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white text-sm font-bold rounded-xl transition-colors border border-white/5"
           >
@@ -216,20 +216,24 @@ const JobDetailsPage: React.FC = () => {
             {/* Background Decoration */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
 
-            <div className="w-full aspect-video bg-zinc-900/50 rounded-2xl overflow-hidden glass border-white/5 group relative flex-shrink-0 flex items-center justify-center">
               {job.status === 'COMPLETED' && job.result_url?.toLowerCase().split('?')[0].endsWith('.mp4') ? (
-                <video
+                <div className="w-full aspect-video bg-zinc-900/50 rounded-2xl overflow-hidden glass border-white/5 group relative flex-shrink-0 flex items-center justify-center">
+                  <video
                   src={job.result_url}
                   controls
                   className="w-full h-full object-cover"
                   poster={job.preview_url}
-                />
+                  />
+                </div>
               ) : job.preview_url ? (
-                <img src={job.preview_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="Job Preview" />
+                <div className="w-full aspect-video bg-zinc-900/50 rounded-2xl overflow-hidden glass border-white/5 group relative flex-shrink-0 flex items-center justify-center">
+                  <img src={job.preview_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="Job Preview" />
+                </div>
               ) : (
-                <PreviewPlaceholder name={job.name} size="lg" />
+                <div className="w-full h-full aspect-video bg-zinc-900/50 rounded-2xl overflow-hidden glass border-white/5 group relative flex-shrink-0 flex items-center justify-center">
+                  <PreviewPlaceholder name={job.name} size="lg" />
+                </div>
               )}
-            </div>
           </div>
         </div>
 
@@ -348,19 +352,14 @@ const JobDetailsPage: React.FC = () => {
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white">{t('job_details.cluster_title')}</h2>
             <p className="text-white/40 text-sm max-w-xl leading-relaxed">{t('job_details.cluster_desc')}</p>
           </div>
-          <div className="flex items-center gap-8 text-[8px] font-black tracking-[0.25em] uppercase text-white/20 bg-white/[0.02] px-6 py-3 rounded-full border border-white/5">
-            <span className="flex items-center gap-3.5"><div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]"></div> {t('status.COMPLETED')}</span>
-            <span className="flex items-center gap-3.5"><div className="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.3)]"></div> {t('status.PROCESSING')}</span>
-            <span className="flex items-center gap-3.5"><div className="w-2 h-2 rounded-full bg-white/10"></div> {t('status.CREATED')}</span>
-          </div>
         </div>
 
-        <div className="glass overflow-hidden border-white/5 shadow-2xl bg-black/40">
+        <div className="glass overflow-hidden border-white/5 shadow-2xl bg-black/40 p-6">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-white/[0.02] text-[10px] uppercase tracking-[0.2em] text-white/25">
-                  <th className="px-8 py-5 font-black border-b border-white/5">{t('job_details.th_node')}</th>
+                  <th className="px-8 py-5 font-black text-left border-b border-white/5">{t('job_details.th_node')}</th>
                   <th className="px-8 py-5 font-black border-b border-white/5 text-center">{t('job_details.th_type')}</th>
                   <th className="px-8 py-5 font-black border-b border-white/5 text-center">{t('job_details.th_frames')}</th>
                   <th className="px-8 py-5 font-black border-b border-white/5">{t('job_details.th_progress') || 'Progress'}</th>
@@ -381,7 +380,7 @@ const JobDetailsPage: React.FC = () => {
                       className="hover:bg-white/[0.04] transition-colors group"
                     >
                       <td className="px-8 py-6">
-                        <div className="flex items-center gap-6">
+                        <div className="flex items-center">
                           <div className={`w-1 h-10 rounded-full transition-shadow duration-500 ${task.status === 'COMPLETED' ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]' : task.status === 'PROCESSING' ? 'bg-cyan-500 pulsing shadow-[0_0_12px_rgba(6,182,212,0.4)]' : 'bg-white/10'}`}></div>
                           <div className="flex flex-col gap-1.5">
                             <span className="text-[11px] font-mono text-white/70 tracking-tight group-hover:text-cyan-400 transition-colors uppercase">{task.id.split('-')[0]}</span>
@@ -410,7 +409,7 @@ const JobDetailsPage: React.FC = () => {
                         <div className="flex flex-col items-center gap-2">
                           <StatusBadge status={task.status} />
                           {task.status === 'FAILED' && task.logs && (
-                            <button 
+                            <button
                               onClick={() => setSelectedTaskLogs({ logs: task.logs!, id: task.id })}
                               className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-rose-500/60 hover:text-rose-500 transition-colors"
                             >
@@ -452,10 +451,10 @@ const JobDetailsPage: React.FC = () => {
 
       <AnimatePresence>
         {selectedTaskLogs && (
-          <LogModal 
-            logs={selectedTaskLogs.logs} 
+          <LogModal
+            logs={selectedTaskLogs.logs}
             taskID={selectedTaskLogs.id}
-            onClose={() => setSelectedTaskLogs(null)} 
+            onClose={() => setSelectedTaskLogs(null)}
           />
         )}
       </AnimatePresence>

@@ -819,6 +819,10 @@ select.form-input option {
   text-align: right;
 }
 
+.text-left {
+  text-align: left;
+}
+
 .underline {
   text-decoration-line: underline;
 }

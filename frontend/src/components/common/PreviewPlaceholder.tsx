@@ -25,7 +25,8 @@ const PreviewPlaceholder: React.FC<PreviewPlaceholderProps> = ({ name, size = 's
   return (
     <div 
       className="w-full h-full flex flex-col items-center justify-center relative overflow-hidden" 
-      style={{ 
+      style={{
+        minHeight: "200px",
         backgroundColor: '#111', 
         background: 'radial-gradient(circle at center, #1a1a1a 0%, #0a0a0a 100%)',
         width: '100%',
