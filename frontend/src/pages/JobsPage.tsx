@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { jobService, Job } from '../services/api';
 import { useNavigate } from 'react-router-dom';
-import { Clock, HardDrive, Layers, ChevronRight, Play } from 'lucide-react';
+import { Clock, HardDrive, Layers, ChevronRight, Play, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../context/LanguageContext';
 import { wsService } from '../services/ws';
@@ -47,7 +47,19 @@ const JobCard: React.FC<{ job: Job }> = ({ job }) => {
         <div className="absolute top-3 left-3">
           <StatusBadge status={job.status} />
         </div>
-        <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+          {job.status === 'COMPLETED' && job.result_path && (
+            <a 
+              href={job.result_path} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-black hover:bg-emerald-400 transition-colors"
+              title={t('common.download_result')}
+            >
+              <Download size={14} />
+            </a>
+          )}
           <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-black">
             <Play size={14} fill="currentColor" />
           </div>

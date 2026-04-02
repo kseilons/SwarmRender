@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { jobService } from '../services/api';
 import { wsService } from '../services/ws';
-import { ChevronLeft, Cpu, HardDrive, Layout, Maximize2, RefreshCw, RotateCcw, Layers } from 'lucide-react';
+import { ChevronLeft, Cpu, HardDrive, Layout, Maximize2, RefreshCw, RotateCcw, Layers, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ProgressBar from '../components/common/ProgressBar';
 
@@ -99,6 +99,17 @@ const JobDetailsPage: React.FC = () => {
         </Link>
 
         <div className="flex gap-3">
+          {job?.status === 'COMPLETED' && job?.result_path && (
+            <a
+              href={job.result_path}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="glass glass-interactive px-6 py-2.5 text-black hover:text-zinc-900 border-none bg-emerald-400 cursor-pointer flex items-center gap-2 text-sm font-bold rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all hover:scale-105 no-underline"
+            >
+              <Download size={18} />
+              {t('common.download_result')}
+            </a>
+          )}
           {canRetry && (
             <button
               onClick={() => retryMutation.mutate()}
@@ -143,6 +154,18 @@ const JobDetailsPage: React.FC = () => {
                     <Maximize2 size={16} />
                   </button>
                 </div>
+                {job.status === 'COMPLETED' && job.result_path && (
+                  <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                    <a 
+                      href={job.result_path} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="w-full py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center justify-center gap-2 transition-colors no-underline"
+                    >
+                      <Download size={14} /> {t('common.download_result')}
+                    </a>
+                  </div>
+                )}
               </div>
 
               {/* Info Details */}
