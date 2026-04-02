@@ -142,10 +142,10 @@ const JobDetailsPage: React.FC = () => {
             <div className="flex flex-col md:flex-row gap-8 relative z-10">
               {/* Preview Image / Video */}
               <div className="w-full md:w-72 aspect-video md:aspect-square bg-zinc-900 rounded-2xl overflow-hidden glass border-white/5 group relative flex-shrink-0">
-                {job.status === 'COMPLETED' && job.result_path?.toLowerCase().endsWith('.mp4') ? (
-                  <video 
-                    src={job.result_path} 
-                    controls 
+                {job.status === 'COMPLETED' && job.result_path?.toLowerCase().split('?')[0].endsWith('.mp4') ? (
+                  <video
+                    src={job.result_path}
+                    controls
                     className="w-full h-full object-cover"
                     poster={job.preview_url}
                   />
@@ -161,9 +161,9 @@ const JobDetailsPage: React.FC = () => {
                 </div>
                 {job.status === 'COMPLETED' && job.result_path && (
                   <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-                    <a 
-                      href={job.result_path} 
-                      target="_blank" 
+                    <a
+                      href={job.result_path}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="w-full py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center justify-center gap-2 transition-colors no-underline"
                     >
@@ -246,12 +246,12 @@ const JobDetailsPage: React.FC = () => {
                 const isCompleted = task.status === 'COMPLETED';
                 const isProcessing = task.status === 'PROCESSING';
                 const isFailed = task.status === 'FAILED';
- 
+
                 const taskTotal = task.frame_end - task.frame_start + 1;
-                const taskCurrent = task.status === 'COMPLETED' ? taskTotal : 
-                                    (task.current_frame && task.current_frame >= task.frame_start ? (task.current_frame - task.frame_start + 1) : 0);
+                const taskCurrent = task.status === 'COMPLETED' ? taskTotal :
+                  (task.current_frame && task.current_frame >= task.frame_start ? (task.current_frame - task.frame_start + 1) : 0);
                 const progressRatio = taskTotal > 0 ? taskCurrent / taskTotal : 0;
- 
+
                 return (
                   <motion.div
                     key={i}
@@ -350,7 +350,7 @@ const JobDetailsPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-8 py-6 min-w-[150px]">
-                        <ProgressBar 
+                        <ProgressBar
                           current={task.status === 'COMPLETED' ? (task.frame_end - task.frame_start + 1) : (task.current_frame && task.current_frame >= task.frame_start ? (task.current_frame - task.frame_start + 1) : 0)}
                           total={task.frame_end - task.frame_start + 1}
                           height={4}
