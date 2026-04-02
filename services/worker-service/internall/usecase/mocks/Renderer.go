@@ -16,9 +16,9 @@ type Renderer struct {
 	mock.Mock
 }
 
-// Render provides a mock function with given fields: ctx, logger, job, progress
-func (_m *Renderer) Render(ctx context.Context, logger *slog.Logger, job domain.RenderJob, progress chan<- int) ([]byte, error) {
-	ret := _m.Called(ctx, logger, job, progress)
+// Render provides a mock function with given fields: ctx, logger, job
+func (_m *Renderer) Render(ctx context.Context, logger *slog.Logger, job domain.RenderJob) ([]byte, error) {
+	ret := _m.Called(ctx, logger, job)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Render")
@@ -26,19 +26,19 @@ func (_m *Renderer) Render(ctx context.Context, logger *slog.Logger, job domain.
 
 	var r0 []byte
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *slog.Logger, domain.RenderJob, chan<- int) ([]byte, error)); ok {
-		return rf(ctx, logger, job, progress)
+	if rf, ok := ret.Get(0).(func(context.Context, *slog.Logger, domain.RenderJob) ([]byte, error)); ok {
+		return rf(ctx, logger, job)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, *slog.Logger, domain.RenderJob, chan<- int) []byte); ok {
-		r0 = rf(ctx, logger, job, progress)
+	if rf, ok := ret.Get(0).(func(context.Context, *slog.Logger, domain.RenderJob) []byte); ok {
+		r0 = rf(ctx, logger, job)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]byte)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, *slog.Logger, domain.RenderJob, chan<- int) error); ok {
-		r1 = rf(ctx, logger, job, progress)
+	if rf, ok := ret.Get(1).(func(context.Context, *slog.Logger, domain.RenderJob) error); ok {
+		r1 = rf(ctx, logger, job)
 	} else {
 		r1 = ret.Error(1)
 	}

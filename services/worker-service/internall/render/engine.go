@@ -8,7 +8,6 @@ import (
 	"io"
 	"log/slog"
 	"os/exec"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -23,7 +22,7 @@ func NewEngine(executablePath string) *Engine {
 	return &Engine{executablePath: executablePath}
 }
 
-func (e *Engine) Render(ctx context.Context, logger *slog.Logger, job domain.RenderJob, progress chan<- int) ([]byte, error) {
+func (e *Engine) Render(ctx context.Context, logger *slog.Logger, job domain.RenderJob) ([]byte, error) {
 	if job.BlendPath == "" {
 		err := fmt.Errorf("blend file path is required")
 		logger.Error("validation failed", slog.Any("error", err))
@@ -48,13 +47,11 @@ func (e *Engine) Render(ctx context.Context, logger *slog.Logger, job domain.Ren
 		return nil, fmt.Errorf("failed to start blender: %w", err)
 	}
 
-	fraRegex := regexp.MustCompile(`Fra:(\d+)`)
 	var fullOutput strings.Builder
 	reader := bufio.NewReader(stdout)
 
-	// Track last reported frame to avoid redundant updates
-	lastFrame := -1
-
+	// We read line by line to log progress to stderr/stdout in real-time,
+	// but the actual progress tracking is now handled by fsnotify in the use-case.
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil {
@@ -65,18 +62,10 @@ func (e *Engine) Render(ctx context.Context, logger *slog.Logger, job domain.Ren
 		}
 
 		fullOutput.WriteString(line)
-
-		if matches := fraRegex.FindStringSubmatch(line); len(matches) > 1 {
-			if frame, err := strconv.Atoi(matches[1]); err == nil {
-				if frame != lastFrame && progress != nil {
-					select {
-					case progress <- frame:
-						lastFrame = frame
-					default:
-						// Skip if channel is full
-					}
-				}
-			}
+		
+		// Optional: Still log frames in debug mode to see them in logs
+		if strings.Contains(line, "Fra:") {
+			logger.Debug("blender progress line", slog.String("line", strings.TrimSpace(line)))
 		}
 	}
 
@@ -90,15 +79,11 @@ func (e *Engine) Render(ctx context.Context, logger *slog.Logger, job domain.Ren
 		return output, err
 	}
 
-	logger.Info("render completed successfully",
-		slog.Int("output_size", len(output)),
-	)
-
 	return output, nil
 }
 
 func (e *Engine) GetMetadata(ctx context.Context, blendPath string) (domain.ProjectMetadata, error) {
-	pyExpr := "import bpy; import json; print('FRAME_INFO:' + json.dumps({'frame_start': bpy.context.scene.frame_start, 'frame_end': bpy.context.scene.frame_end}))"
+	pyExpr := "import bpy, json; print('FRAME_INFO:' + json.dumps({'frame_start': bpy.context.scene.frame_start, 'frame_end': bpy.context.scene.frame_end}))"
 	args := []string{"-b", blendPath, "--python-expr", pyExpr}
 
 	cmd := exec.CommandContext(ctx, e.executablePath, args...)
@@ -107,8 +92,8 @@ func (e *Engine) GetMetadata(ctx context.Context, blendPath string) (domain.Proj
 		return domain.ProjectMetadata{}, fmt.Errorf("blender metadata extraction failed: %w (output: %s)", err, string(output))
 	}
 
-	lines := strings.SplitSeq(string(output), "\n")
-	for line := range lines {
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
 		if after, ok := strings.CutPrefix(line, "FRAME_INFO:"); ok {
 			jsonStr := after
 			var metadata domain.ProjectMetadata

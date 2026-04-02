@@ -3,6 +3,7 @@ module kseilons/worker-service
 go 1.25.0
 
 require (
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/minio/minio-go/v7 v7.0.99
 	github.com/segmentio/kafka-go v0.4.50
