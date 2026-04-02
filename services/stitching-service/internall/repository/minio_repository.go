@@ -78,5 +78,5 @@ func (r *MinioRepository) UploadFinalVideo(ctx context.Context, projectID string
 		return "", fmt.Errorf("failed to upload final video: %w", err)
 	}
 
-	return fmt.Sprintf("s3://%s/%s", r.outputBucket, objectName), nil
+	return objectName, nil
 }

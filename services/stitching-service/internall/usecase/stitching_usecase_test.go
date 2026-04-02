@@ -40,10 +40,10 @@ func TestStitchingUseCase_Execute(t *testing.T) {
 		})
 
 		mockStitcher.On("Stitch", ctx, logger, mock.Anything, mock.Anything, []string{"frame_0001.png"}).Return(nil).Once()
-		mockRepo.On("UploadFinalVideo", ctx, "job-123", mock.Anything).Return("s3://results/job-123/final.mp4", nil).Once()
+		mockRepo.On("UploadFinalVideo", ctx, "job-123", mock.Anything).Return("job-123_final.mp4", nil).Once()
 		
 		mockProducer.On("ReportResult", ctx, mock.MatchedBy(func(res domain.RenderResult) bool {
-			return res.Status == domain.StatusCompleted && res.ResultPath == "s3://results/job-123/final.mp4"
+			return res.Status == domain.StatusCompleted && res.ResultURL == "job-123_final.mp4"
 		})).Return(nil).Once()
 
 		err := uc.Execute(ctx, logger, task)
