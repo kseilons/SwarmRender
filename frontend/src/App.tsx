@@ -43,7 +43,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchQuery(value);
-    
+
     // Navigate home if we're not already there and there's a search query
     if (location.pathname !== '/' && value.trim() !== '') {
       navigate('/');
@@ -59,24 +59,24 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <Box size={24} />
           </div>
           <span className="text-xl font-bold tracking-tight">
-            RenderCore
+            SwarmRender
           </span>
         </Link>
 
         <div className="flex items-center gap-4">
           <LanguageSwitcher />
-          
+
           <div className="search-container">
             <Search className="search-icon" size={16} />
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder={t('common.search_placeholder')}
               className="search-input"
               value={searchQuery}
               onChange={handleSearchChange}
             />
           </div>
-          <button 
+          <button
             onClick={() => setModalOpen(true)}
             className="btn-primary"
           >
@@ -100,14 +100,14 @@ function App() {
     <LanguageProvider>
       <SearchProvider>
         <QueryClientProvider client={queryClient}>
-        <Router>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<JobsPage />} />
-              <Route path="/job/:id" element={<JobDetailsPage />} />
-            </Routes>
-          </Layout>
-        </Router>
+          <Router>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<JobsPage />} />
+                <Route path="/job/:id" element={<JobDetailsPage />} />
+              </Routes>
+            </Layout>
+          </Router>
         </QueryClientProvider>
       </SearchProvider>
     </LanguageProvider>
