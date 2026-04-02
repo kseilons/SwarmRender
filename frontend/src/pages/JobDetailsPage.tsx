@@ -100,9 +100,9 @@ const JobDetailsPage: React.FC = () => {
         </Link>
 
         <div className="flex gap-3">
-          {job?.status === 'COMPLETED' && job?.result_path && (
+          {job?.status === 'COMPLETED' && job?.result_url && (
             <a
-              href={job.result_path}
+              href={job.result_url}
               target="_blank"
               rel="noopener noreferrer"
               className="glass glass-interactive px-6 py-2.5 text-black hover:text-zinc-900 border-none bg-emerald-400 cursor-pointer flex items-center gap-2 text-sm font-bold rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all hover:scale-105 no-underline"
@@ -142,9 +142,9 @@ const JobDetailsPage: React.FC = () => {
             <div className="flex flex-col md:flex-row gap-8 relative z-10">
               {/* Preview Image / Video */}
               <div className="w-full md:w-72 aspect-video md:aspect-square bg-zinc-900 rounded-2xl overflow-hidden glass border-white/5 group relative flex-shrink-0">
-                {job.status === 'COMPLETED' && job.result_path?.toLowerCase().split('?')[0].endsWith('.mp4') ? (
+                {job.status === 'COMPLETED' && job.result_url?.toLowerCase().split('?')[0].endsWith('.mp4') ? (
                   <video
-                    src={job.result_path}
+                    src={job.result_url}
                     controls
                     className="w-full h-full object-cover"
                     poster={job.preview_url}
@@ -159,10 +159,10 @@ const JobDetailsPage: React.FC = () => {
                     <Maximize2 size={16} />
                   </button>
                 </div>
-                {job.status === 'COMPLETED' && job.result_path && (
+                {job.status === 'COMPLETED' && job.result_url && (
                   <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
                     <a
-                      href={job.result_path}
+                      href={job.result_url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="w-full py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center justify-center gap-2 transition-colors no-underline"

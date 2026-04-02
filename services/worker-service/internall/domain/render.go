@@ -40,13 +40,11 @@ const (
 type Status string
 
 const (
-	StatusPending   Status = "PENDING"
-	StatusCompleted Status = "COMPLETED"
-	StatusFailed    Status = "FAILED"
+	StatusPending    Status = "PENDING"
+	StatusCompleted  Status = "COMPLETED"
+	StatusFailed     Status = "FAILED"
 	StatusProcessing Status = "PROCESSING"
 )
-
-
 
 type ProjectMetadata struct {
 	FrameStart int `json:"frame_start"`
@@ -79,14 +77,14 @@ type BaseTask struct {
 // MetadataTask contains parameters for a metadata extraction job.
 type MetadataTask struct {
 	BaseTask
-	BlendFile string `json:"blend_file"`
+	MainFileURL string `json:"main_file_url"`
 }
 
 // RenderTask groups all parameters for a single render job.
 type RenderTask struct {
 	BaseTask
-	CommonTask `json:",inline"`
-	BlendFile  string `json:"blend_file"`
+	CommonTask  `json:",inline"`
+	MainFileURL string `json:"main_file_url"`
 }
 
 type TaskType string
@@ -99,17 +97,16 @@ const (
 
 // RenderResult is the message workers send back when a task is finished.
 type RenderResult struct {
-	TaskID     string           `json:"task_id"`
-	ProjectID  string           `json:"project_id"`
-	Type       TaskType         `json:"type"`
-	Status     Status           `json:"status"`
-	WorkerID   string           `json:"worker_id"`
-	Error      string           `json:"error,omitempty"`
-	Metadata   *ProjectMetadata `json:"metadata,omitempty"`
-	ResultPath   string           `json:"result_path,omitempty"`
+	TaskID       string           `json:"task_id"`
+	ProjectID    string           `json:"project_id"`
+	Type         TaskType         `json:"type"`
+	Status       Status           `json:"status"`
+	WorkerID     string           `json:"worker_id"`
+	Error        string           `json:"error,omitempty"`
+	Metadata     *ProjectMetadata `json:"metadata,omitempty"`
+	ResultURL    string           `json:"result_url,omitempty"`
 	CurrentFrame int              `json:"current_frame,omitempty"`
 }
-
 
 // RenderJob contains all parameters needed by the rendering engine.
 type RenderJob struct {
@@ -122,7 +119,7 @@ type RenderJob struct {
 func (t MetadataTask) LogAttrs() []any {
 	return []any{
 		slog.String("project_id", t.ProjectID),
-		slog.String("blend_file", t.BlendFile),
+		slog.String("main_file_url", t.MainFileURL),
 	}
 }
 
@@ -130,7 +127,7 @@ func (t MetadataTask) LogAttrs() []any {
 func (t RenderTask) LogAttrs() []any {
 	return []any{
 		slog.String("project_id", t.ProjectID),
-		slog.String("blend_file", t.BlendFile),
+		slog.String("main_file_url", t.MainFileURL),
 		slog.Int("start_frame", t.StartFrame),
 		slog.Int("end_frame", t.EndFrame),
 		slog.String("engine", string(t.Options.Engine)),

@@ -26,7 +26,7 @@ func TestHandler_CreateJob(t *testing.T) {
 
 	reqBody := domain.CreateJobRequest{
 		Name:        "api-test-job",
-		S3Path:      "bucket/project.blend",
+		MainFileURL: "bucket/project.blend",
 		WorkerCount: 3,
 	}
 	body, _ := json.Marshal(reqBody)

@@ -41,7 +41,7 @@ func (uc *MetadataUseCase) Execute(ctx context.Context, logger *slog.Logger, tas
 		return fmt.Errorf("failed to download project: %w", err)
 	}
 
-	blendPath := filepath.Join(tempDir, task.BlendFile)
+	blendPath := filepath.Join(tempDir, extractRelativePath(task.ProjectID, task.MainFileURL))
 	logger.Info("extracting metadata", slog.String("blend_path", blendPath))
 
 	metadata, err := uc.renderer.GetMetadata(ctx, blendPath)
@@ -50,7 +50,7 @@ func (uc *MetadataUseCase) Execute(ctx context.Context, logger *slog.Logger, tas
 		return err
 	}
 
-	logger.Info("metadata extracted successfully", 
+	logger.Info("metadata extracted successfully",
 		slog.Int("start_frame", metadata.FrameStart),
 		slog.Int("end_frame", metadata.FrameEnd),
 	)

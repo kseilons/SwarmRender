@@ -17,12 +17,12 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [fileCount, setFileCount] = useState(0);
-  const [blendFiles, setBlendFiles] = useState<{ name: string, s3Path: string, size: number }[]>([]);
+  const [blendFiles, setBlendFiles] = useState<{ name: string, mainFileURL: string, size: number }[]>([]);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState<CreateJobRequest>({
     name: '',
-    s3_path: '',
+    main_file_url: '',
     frame_start: 1,
     frame_end: 250,
     worker_count: 2,
@@ -51,7 +51,7 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
       setTimeout(() => {
         onClose();
         setStep(1);
-        setFormData({ ...formData, name: '', s3_path: '' });
+        setFormData({ ...formData, name: '', main_file_url: '' });
       }, 2000);
     }
   });
@@ -66,11 +66,11 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
     let uploadedCount = 0;
     setBlendFiles([]);
-    setFormData(prev => ({ ...prev, s3_path: '' }));
+    setFormData(prev => ({ ...prev, main_file_url: '' }));
 
     try {
       const projectId = self.crypto.randomUUID();
-      let largestFile = { s3Path: '', size: 0 };
+      let largestFile = { mainFileURL: '', size: 0 };
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const relativePath = file.webkitRelativePath || file.name;
@@ -82,16 +82,16 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
         }
 
         // 1. Get signed URL with project_id
-        const { upload_url, s3_path } = await jobService.getUploadUrl(relativePath, projectId);
+        const { upload_url, main_file_url } = await jobService.getUploadUrl(relativePath, projectId);
         
         // 2. Upload to S3
         await jobService.uploadFileToS3(upload_url, file);
 
         // Keep track of all .blend files found
         if (file.name.endsWith('.blend')) {
-          setBlendFiles(prev => [...prev, { name: relativePath, s3Path: s3_path, size: file.size }]);
+          setBlendFiles(prev => [...prev, { name: relativePath, mainFileURL: main_file_url, size: file.size }]);
           if (file.size > largestFile.size) {
-            largestFile = { s3Path: s3_path, size: file.size };
+            largestFile = { mainFileURL: main_file_url, size: file.size };
           }
         }
 
@@ -100,8 +100,8 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
       }
 
       // Automatically select the largest file by default
-      if (largestFile.s3Path) {
-        setFormData(prev => ({ ...prev, s3_path: largestFile.s3Path }));
+      if (largestFile.mainFileURL) {
+        setFormData(prev => ({ ...prev, main_file_url: largestFile.mainFileURL }));
       }
 
       // If no main file detected or multiple, the last 's3_path' updated in the loop 
@@ -177,7 +177,7 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
                     <div 
                       onClick={handleUploadClick}
                       className="upload-area"
-                      style={formData.s3_path ? {borderColor: 'rgba(16, 185, 129, 0.5)', background: 'rgba(16, 185, 129, 0.05)'} : {}}
+                      style={formData.main_file_url ? {borderColor: 'rgba(16, 185, 129, 0.5)', background: 'rgba(16, 185, 129, 0.05)'} : {}}
                     >
                       <input 
                         type="file" 
@@ -196,11 +196,11 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
                               <div className="progress-fill" style={{ width: `${uploadProgress}%` }}></div>
                            </div>
                         </div>
-                      ) : formData.s3_path ? (
+                      ) : formData.main_file_url ? (
                         <>
                           <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-400" style={{background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', width: '48px', height: '48px', borderRadius: '50%'}}><Check size={24} /></div>
                           <span className="text-sm font-medium" style={{color: '#10b981'}}>{t('create_modal.upload_complete')}</span>
-                          <span className="text-xs text-white/30 truncate w-full text-center font-mono">{formData.s3_path.split('/').pop()}</span>
+                          <span className="text-xs text-white/30 truncate w-full text-center font-mono">{formData.main_file_url.split('/').pop()}</span>
                         </>
                       ) : (
                         <>
@@ -224,12 +224,12 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
                       <label className="form-label">{t('create_modal.field_main_file')}</label>
                       <select 
                         className="form-input"
-                        value={formData.s3_path}
-                        onChange={e => setFormData({...formData, s3_path: e.target.value})}
+                        value={formData.main_file_url}
+                        onChange={e => setFormData({...formData, main_file_url: e.target.value})}
                       >
                         <option value="" disabled>{t('common.unassigned')}</option>
                         {blendFiles.map((file, idx) => (
-                          <option key={idx} value={file.s3Path}>
+                          <option key={idx} value={file.mainFileURL}>
                             {file.name}
                           </option>
                         ))}
@@ -240,7 +240,7 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
                 <div className="flex justify-end pt-4">
                    <button 
-                    disabled={!formData.name || !formData.s3_path}
+                    disabled={!formData.name || !formData.main_file_url}
                     className="btn-primary"
                     style={{width: 'auto', padding: '12px 32px'}}
                    >

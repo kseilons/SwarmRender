@@ -30,7 +30,7 @@ func TestRenderUseCase_Execute_Success(t *testing.T) {
 			ProjectID: "test-proj",
 			TaskID:    "task-123",
 		},
-		BlendFile: "scene.blend",
+		MainFileURL: "scene.blend",
 		CommonTask: domain.CommonTask{
 			StartFrame: 1,
 			EndFrame:   1,

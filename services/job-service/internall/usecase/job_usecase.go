@@ -17,7 +17,7 @@ type JobRepository interface {
 	CreateJob(ctx context.Context, job domain.Job) error
 	GetJob(ctx context.Context, id string) (domain.Job, error)
 	UpdateJobStatus(ctx context.Context, id string, status domain.Status) error
-	UpdateJobResult(ctx context.Context, id string, status domain.Status, resultPath *string) error
+	UpdateJobResult(ctx context.Context, id string, status domain.Status, resultURL *string) error
 	UpdateJobPreview(ctx context.Context, id string, previewPath string) error
 	UpdateJobMetadata(ctx context.Context, id string, frameStart, frameEnd int) error
 	UpdateJobProgress(ctx context.Context, id string, completedFrames int) error
@@ -28,8 +28,8 @@ type TaskRepository interface {
 	CreateTasks(ctx context.Context, tasks []domain.Task) error
 	GetTask(ctx context.Context, id string) (domain.Task, error)
 	GetTasksByJobID(ctx context.Context, jobID string) ([]domain.Task, error)
-	UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID *string, resultPath *string) (string, error)
-	UpdateTaskProgress(ctx context.Context, id string, currentFrame int) (string, error)
+	UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID *string, resultURL *string) (string, error)
+	UpdateTaskProgress(ctx context.Context, id string, currentFrame int) (string, domain.Status, error)
 	GetJobTasksStatus(ctx context.Context, jobID string) (map[domain.Status]int, error)
 	ResetFailedTasks(ctx context.Context, jobID string) ([]domain.Task, error)
 }
@@ -73,7 +73,7 @@ func (uc *JobUseCase) CreateJob(ctx context.Context, req domain.CreateJobRequest
 	job := domain.Job{
 		ID:          uuid.New().String(),
 		Name:        req.Name,
-		S3Path:      req.S3Path,
+		MainFileURL: req.MainFileURL,
 		FrameStart:  req.FrameStart,
 		FrameEnd:    req.FrameEnd,
 		WorkerCount: req.WorkerCount,
@@ -113,10 +113,10 @@ func (uc *JobUseCase) CreateJob(ctx context.Context, req domain.CreateJobRequest
 func (uc *JobUseCase) RequestMetadata(ctx context.Context, job domain.Job, logger *slog.Logger) error {
 	task := domain.MetadataTask{
 		BaseTask: domain.BaseTask{
-			ProjectID: extractProjectID(job.S3Path),
+			ProjectID: extractProjectID(job.MainFileURL),
 			TaskID:    fmt.Sprintf("meta-%s", job.ID),
 		},
-		BlendFile: job.S3Path,
+		MainFileURL: job.MainFileURL,
 	}
 
 	topic := uc.kafkaCfg.MetadataTopic
@@ -185,7 +185,7 @@ func (uc *JobUseCase) SplitJobIntoTasks(ctx context.Context, job domain.Job, log
 	for _, t := range tasks {
 		renderTask := domain.RenderTask{
 			BaseTask: domain.BaseTask{
-				ProjectID: extractProjectID(job.S3Path),
+				ProjectID: extractProjectID(job.MainFileURL),
 				TaskID:    t.ID,
 			},
 			CommonTask: domain.CommonTask{
@@ -193,7 +193,7 @@ func (uc *JobUseCase) SplitJobIntoTasks(ctx context.Context, job domain.Job, log
 				EndFrame:   t.FrameEnd,
 				Options:    job.Options,
 			},
-			BlendFile: job.S3Path,
+			MainFileURL: job.MainFileURL,
 		}
 
 		if err := uc.producer.SendTask(ctx, job.ID, renderTask, topic); err != nil {
@@ -226,7 +226,7 @@ func (uc *JobUseCase) HandleMetadataResult(ctx context.Context, jobID string, fr
 func (uc *JobUseCase) HandleTaskResult(ctx context.Context, result domain.RenderResult, logger *slog.Logger) error {
 	logger.Info("handling task result", slog.String("task_id", result.TaskID), slog.String("status", string(result.Status)))
 
-	jobID, err := uc.taskRepo.UpdateTaskStatus(ctx, result.TaskID, result.Status, result.WorkerID, result.ResultPath)
+	jobID, err := uc.taskRepo.UpdateTaskStatus(ctx, result.TaskID, result.Status, result.WorkerID, result.ResultURL)
 	if err != nil {
 		logger.Error("failed to update task status", slog.Any("error", err))
 		return err
@@ -318,13 +318,13 @@ func (uc *JobUseCase) StartStitching(ctx context.Context, job domain.Job, logger
 
 	task := domain.StitchingTask{
 		BaseTask: domain.BaseTask{
-			ProjectID: extractProjectID(job.S3Path),
+			ProjectID: extractProjectID(job.MainFileURL),
 			TaskID:    stitchingTaskID,
 		},
-		S3Path:     job.S3Path,
-		FrameStart: job.FrameStart,
-		FrameEnd:   job.FrameEnd,
-		Format:     job.Options.Format,
+		MainFileURL: job.MainFileURL,
+		FrameStart:  job.FrameStart,
+		FrameEnd:    job.FrameEnd,
+		Format:      job.Options.Format,
 	}
 
 	topic := uc.kafkaCfg.StitchingTopic
@@ -349,7 +349,7 @@ func (uc *JobUseCase) StartStitching(ctx context.Context, job domain.Job, logger
 }
 
 func (uc *JobUseCase) HandleTaskProgress(ctx context.Context, taskID string, currentFrame int, logger *slog.Logger) error {
-	jobID, err := uc.taskRepo.UpdateTaskProgress(ctx, taskID, currentFrame)
+	jobID, status, err := uc.taskRepo.UpdateTaskProgress(ctx, taskID, currentFrame)
 	if err != nil {
 		return err
 	}
@@ -358,6 +358,7 @@ func (uc *JobUseCase) HandleTaskProgress(ctx context.Context, taskID string, cur
 		uc.hub.BroadcastStatusUpdate(map[string]any{
 			"type":          "task_progress",
 			"task_id":       taskID,
+			"status":        status,
 			"current_frame": currentFrame,
 		})
 	}
@@ -391,10 +392,10 @@ func (uc *JobUseCase) HandleStitchingResult(ctx context.Context, result domain.R
 	logger.Info("handling stitching result",
 		slog.String("task_id", result.TaskID),
 		slog.String("status", string(result.Status)),
-		slog.Any("result_path", result.ResultPath),
+		slog.Any("result_url", result.ResultURL),
 	)
 
-	jobID, err := uc.taskRepo.UpdateTaskStatus(ctx, result.TaskID, result.Status, result.WorkerID, result.ResultPath)
+	jobID, err := uc.taskRepo.UpdateTaskStatus(ctx, result.TaskID, result.Status, result.WorkerID, result.ResultURL)
 	if err != nil {
 		logger.Error("failed to update stitching task in tasks table", slog.Any("error", err))
 	}
@@ -411,13 +412,13 @@ func (uc *JobUseCase) HandleStitchingResult(ctx context.Context, result domain.R
 		jobID = result.ProjectID
 	}
 
-	err = uc.jobRepo.UpdateJobResult(ctx, jobID, result.Status, result.ResultPath)
+	err = uc.jobRepo.UpdateJobResult(ctx, jobID, result.Status, result.ResultURL)
 	if err == nil && uc.hub != nil {
 		uc.hub.BroadcastStatusUpdate(map[string]any{
-			"type":        "job_update",
-			"job_id":      jobID,
-			"status":      result.Status,
-			"result_path": result.ResultPath,
+			"type":       "job_update",
+			"job_id":     jobID,
+			"status":     result.Status,
+			"result_url": result.ResultURL,
 		})
 	}
 	return err
@@ -459,23 +460,22 @@ func (uc *JobUseCase) GetJob(ctx context.Context, id string) (domain.JobResponse
 	}
 
 	if job.PreviewURL != nil && *job.PreviewURL != "" && !strings.HasPrefix(*job.PreviewURL, "http") {
-		url, err := uc.minioRepo.GenerateDownloadURL(ctx, *job.PreviewURL)
+		key := *job.PreviewURL
+		url, err := uc.minioRepo.GenerateDownloadURL(ctx, key)
 		if err == nil {
 			job.PreviewURL = &url
+		} else {
+			slog.Error("failed to generate preview url", "job_id", id, "key", key, "error", err)
 		}
 	}
 
-	if job.ResultPath != nil && *job.ResultPath != "" && strings.HasSuffix(*job.ResultPath, ".mp4") {
-		// If it's a video path from stitching service, it might be an s3:// URL or a key
-		key := strings.TrimPrefix(*job.ResultPath, "s3://")
-		// Remove bucket name from key if present
-		parts := strings.SplitN(key, "/", 2)
-		if len(parts) == 2 {
-			key = parts[1]
-		}
+	if job.ResultURL != nil && *job.ResultURL != "" && !strings.HasPrefix(*job.ResultURL, "http") {
+		key := *job.ResultURL
 		url, err := uc.minioRepo.GenerateDownloadURL(ctx, key)
 		if err == nil {
-			job.ResultPath = &url
+			job.ResultURL = &url
+		} else {
+			slog.Error("failed to generate result url", "job_id", id, "key", key, "error", err)
 		}
 	}
 
@@ -489,26 +489,40 @@ func (uc *JobUseCase) generatePreview(ctx context.Context, job domain.Job, task 
 	if uc.minioRepo == nil {
 		return
 	}
-	projectID := extractProjectID(job.S3Path)
+
+	projectID := extractProjectID(job.MainFileURL)
 	scenePrefix := ""
 	if job.Options.Scene != "" {
 		scenePrefix = fmt.Sprintf("%s_", job.Options.Scene)
 	}
 
+	// Try common extensions starting with the requested format
+	exts := []string{".png", ".jpg", ".jpeg"}
+	formatExt := "." + strings.ToLower(job.Options.Format)
+	if formatExt != "" && formatExt != ".png" {
+		exts = append([]string{formatExt}, exts...)
+	}
+
 	frameNum := task.FrameStart
-	srcKey := fmt.Sprintf("%s_results/%s%04d.png", projectID, scenePrefix, frameNum)
 	dstKey := fmt.Sprintf("%s_preview.png", projectID)
 
-	logger.Info("generating preview", slog.String("src", srcKey), slog.String("dst", dstKey))
+	var lastErr error
+	for _, ext := range exts {
+		srcKey := fmt.Sprintf("%s_results/%s%04d%s", projectID, scenePrefix, frameNum, ext)
+		logger.Info("attempting to generate preview", slog.String("src", srcKey), slog.String("dst", dstKey))
 
-	if err := uc.minioRepo.CopyObject(ctx, srcKey, dstKey); err != nil {
-		logger.Error("failed to copy preview object", slog.Any("error", err))
-		return
+		if err := uc.minioRepo.CopyObject(ctx, srcKey, dstKey); err == nil {
+			logger.Info("successfully generated preview", slog.String("src", srcKey))
+			if err := uc.jobRepo.UpdateJobPreview(ctx, job.ID, dstKey); err != nil {
+				logger.Error("failed to update job preview path in DB", slog.Any("error", err))
+			}
+			return
+		} else {
+			lastErr = err
+		}
 	}
 
-	if err := uc.jobRepo.UpdateJobPreview(ctx, job.ID, dstKey); err != nil {
-		logger.Error("failed to update job preview path", slog.Any("error", err))
-	}
+	logger.Error("failed to generate preview after multiple attempts", slog.Any("error", lastErr))
 }
 
 func (uc *JobUseCase) ListJobs(ctx context.Context) ([]domain.Job, error) {
@@ -519,21 +533,21 @@ func (uc *JobUseCase) ListJobs(ctx context.Context) ([]domain.Job, error) {
 
 	for i := range jobs {
 		if jobs[i].PreviewURL != nil && *jobs[i].PreviewURL != "" && !strings.HasPrefix(*jobs[i].PreviewURL, "http") {
-			url, err := uc.minioRepo.GenerateDownloadURL(ctx, *jobs[i].PreviewURL)
-			if err == nil {
-				jobs[i].PreviewURL = &url
-			}
-		}
-		if jobs[i].ResultPath != nil && *jobs[i].ResultPath != "" && !strings.HasPrefix(*jobs[i].ResultPath, "http") {
-			key := strings.TrimPrefix(*jobs[i].ResultPath, "s3://")
-			// Remove bucket name from key if it's a full s3:// URL
-			parts := strings.SplitN(key, "/", 2)
-			if len(parts) == 2 {
-				key = parts[1]
-			}
+			key := *jobs[i].PreviewURL
 			url, err := uc.minioRepo.GenerateDownloadURL(ctx, key)
 			if err == nil {
-				jobs[i].ResultPath = &url
+				jobs[i].PreviewURL = &url
+			} else {
+				slog.Error("failed to generate preview url in list", "job_id", jobs[i].ID, "key", key, "error", err)
+			}
+		}
+		if jobs[i].ResultURL != nil && *jobs[i].ResultURL != "" && !strings.HasPrefix(*jobs[i].ResultURL, "http") {
+			key := *jobs[i].ResultURL
+			url, err := uc.minioRepo.GenerateDownloadURL(ctx, key)
+			if err == nil {
+				jobs[i].ResultURL = &url
+			} else {
+				slog.Error("failed to generate result url in list", "job_id", jobs[i].ID, "key", key, "error", err)
 			}
 		}
 	}
@@ -563,7 +577,7 @@ func (uc *JobUseCase) RetryJob(ctx context.Context, jobID string, logger *slog.L
 	for _, t := range resetTasks {
 		renderTask := domain.RenderTask{
 			BaseTask: domain.BaseTask{
-				ProjectID: extractProjectID(job.S3Path),
+				ProjectID: extractProjectID(job.MainFileURL),
 				TaskID:    t.ID,
 			},
 			CommonTask: domain.CommonTask{
@@ -571,7 +585,7 @@ func (uc *JobUseCase) RetryJob(ctx context.Context, jobID string, logger *slog.L
 				EndFrame:   t.FrameEnd,
 				Options:    job.Options,
 			},
-			BlendFile: job.S3Path,
+			MainFileURL: job.MainFileURL,
 		}
 
 		if err := uc.producer.SendTask(ctx, job.ID, renderTask, topic); err != nil {
@@ -596,10 +610,10 @@ func (uc *JobUseCase) GenerateUploadURL(ctx context.Context, filename string, pr
 	return url, objectKey, nil
 }
 
-func extractProjectID(s3Path string) string {
-	parts := strings.Split(s3Path, "_sources/")
+func extractProjectID(mainFileURL string) string {
+	parts := strings.Split(mainFileURL, "_sources/")
 	if len(parts) > 0 {
 		return parts[0]
 	}
-	return s3Path
+	return mainFileURL
 }

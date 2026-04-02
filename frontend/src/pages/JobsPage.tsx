@@ -78,9 +78,9 @@ const JobCard: React.FC<{ job: Job }> = ({ job }) => {
           </div>
 
           <div className="flex items-center gap-3">
-            {job.status === 'COMPLETED' && job.result_path && (
+            {job.status === 'COMPLETED' && job.result_url && (
               <a
-                href={job.result_path}
+                href={job.result_url}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}

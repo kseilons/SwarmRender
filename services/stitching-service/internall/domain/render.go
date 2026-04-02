@@ -25,27 +25,27 @@ type BaseTask struct {
 
 type StitchingTask struct {
 	BaseTask
-	S3Path     string `json:"s3_path"`
-	FrameStart int    `json:"frame_start"`
-	FrameEnd   int    `json:"frame_end"`
-	Format     string `json:"format"`
+	MainFileURL string `json:"main_file_url"`
+	FrameStart  int    `json:"frame_start"`
+	FrameEnd    int    `json:"frame_end"`
+	Format      string `json:"format"`
 }
 
 type RenderResult struct {
-	TaskID     string   `json:"task_id"`
-	ProjectID  string   `json:"project_id"`
-	Type       TaskType `json:"type"`
-	Status     Status   `json:"status"`
-	WorkerID   string   `json:"worker_id"`
-	Error      string   `json:"error,omitempty"`
-	ResultPath string   `json:"result_path,omitempty"`
+	TaskID    string   `json:"task_id"`
+	ProjectID string   `json:"project_id"`
+	Type      TaskType `json:"type"`
+	Status    Status   `json:"status"`
+	WorkerID  string   `json:"worker_id"`
+	Error     string   `json:"error,omitempty"`
+	ResultURL string   `json:"result_url,omitempty"`
 }
 
 func (t StitchingTask) LogAttrs() []any {
 	return []any{
 		slog.String("project_id", t.ProjectID),
 		slog.String("task_id", t.TaskID),
-		slog.String("s3_path", t.S3Path),
+		slog.String("main_file_url", t.MainFileURL),
 		slog.Int("f_start", t.FrameStart),
 		slog.Int("f_end", t.FrameEnd),
 	}

@@ -151,7 +151,7 @@ func (_m *TaskRepository) ResetFailedTasks(ctx context.Context, jobID string) ([
 }
 
 // UpdateTaskProgress provides a mock function with given fields: ctx, id, currentFrame
-func (_m *TaskRepository) UpdateTaskProgress(ctx context.Context, id string, currentFrame int) (string, error) {
+func (_m *TaskRepository) UpdateTaskProgress(ctx context.Context, id string, currentFrame int) (string, domain.Status, error) {
 	ret := _m.Called(ctx, id, currentFrame)
 
 	if len(ret) == 0 {
@@ -159,8 +159,9 @@ func (_m *TaskRepository) UpdateTaskProgress(ctx context.Context, id string, cur
 	}
 
 	var r0 string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, int) (string, error)); ok {
+	var r1 domain.Status
+	var r2 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, int) (string, domain.Status, error)); ok {
 		return rf(ctx, id, currentFrame)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string, int) string); ok {
@@ -169,13 +170,19 @@ func (_m *TaskRepository) UpdateTaskProgress(ctx context.Context, id string, cur
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, int) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string, int) domain.Status); ok {
 		r1 = rf(ctx, id, currentFrame)
 	} else {
-		r1 = ret.Error(1)
+		r1 = ret.Get(1).(domain.Status)
 	}
 
-	return r0, r1
+	if rf, ok := ret.Get(2).(func(context.Context, string, int) error); ok {
+		r2 = rf(ctx, id, currentFrame)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
 }
 
 // UpdateTaskStatus provides a mock function with given fields: ctx, id, status, workerID, resultPath

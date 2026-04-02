@@ -21,12 +21,12 @@ export type Status = 'CREATED' | 'PENDING_METADATA' | 'PROCESSING' | 'COMPLETED'
 export interface Job {
   id: string;
   name: string;
-  s3_path: string;
+  main_file_url: string;
   frame_start: number;
   frame_end: number;
   worker_count: number;
   status: Status;
-  result_path?: string;
+  result_url?: string;
   preview_url?: string;
   completed_frames: number;
   options: RenderOptions;
@@ -43,7 +43,7 @@ export interface Task {
   status: Status;
   current_frame: number;
   worker_id?: string;
-  result_path?: string;
+  result_url?: string;
   retry_count: number;
   created_at: string;
   updated_at: string;
@@ -56,7 +56,7 @@ export interface JobResponse {
 
 export interface CreateJobRequest {
   name: string;
-  s3_path: string;
+  main_file_url: string;
   frame_start: number;
   frame_end: number;
   worker_count: number;
@@ -66,7 +66,7 @@ export interface CreateJobRequest {
 
 export interface UploadUrlResponse {
   upload_url: string;
-  s3_path: string;
+  main_file_url: string;
 }
 
 const api = axios.create({

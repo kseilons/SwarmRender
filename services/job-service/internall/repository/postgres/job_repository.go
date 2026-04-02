@@ -18,12 +18,12 @@ func NewJobRepository(pool *pgxpool.Pool) *JobRepository {
 
 func (r *JobRepository) CreateJob(ctx context.Context, job domain.Job) error {
 	query := `
-		INSERT INTO jobs (id, name, s3_path, frame_start, frame_end, worker_count, status, result_path, options, preview_url, completed_frames, created_at, updated_at)
+		INSERT INTO jobs (id, name, main_file_url, frame_start, frame_end, worker_count, status, result_url, options, preview_url, completed_frames, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 	`
 	_, err := r.pool.Exec(ctx, query,
-		job.ID, job.Name, job.S3Path, job.FrameStart, job.FrameEnd,
-		job.WorkerCount, job.Status, job.ResultPath, job.Options, job.PreviewURL, job.CompletedFrames, job.CreatedAt, job.UpdatedAt,
+		job.ID, job.Name, job.MainFileURL, job.FrameStart, job.FrameEnd,
+		job.WorkerCount, job.Status, job.ResultURL, job.Options, job.PreviewURL, job.CompletedFrames, job.CreatedAt, job.UpdatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to insert job: %w", err)
@@ -33,13 +33,13 @@ func (r *JobRepository) CreateJob(ctx context.Context, job domain.Job) error {
 
 func (r *JobRepository) GetJob(ctx context.Context, id string) (domain.Job, error) {
 	query := `
-		SELECT id, name, s3_path, frame_start, frame_end, worker_count, status, result_path, options, preview_url, completed_frames, created_at, updated_at
+		SELECT id, name, main_file_url, frame_start, frame_end, worker_count, status, result_url, options, preview_url, completed_frames, created_at, updated_at
 		FROM jobs WHERE id = $1
 	`
 	var job domain.Job
 	err := r.pool.QueryRow(ctx, query, id).Scan(
-		&job.ID, &job.Name, &job.S3Path, &job.FrameStart, &job.FrameEnd,
-		&job.WorkerCount, &job.Status, &job.ResultPath, &job.Options, &job.PreviewURL, &job.CompletedFrames, &job.CreatedAt, &job.UpdatedAt,
+		&job.ID, &job.Name, &job.MainFileURL, &job.FrameStart, &job.FrameEnd,
+		&job.WorkerCount, &job.Status, &job.ResultURL, &job.Options, &job.PreviewURL, &job.CompletedFrames, &job.CreatedAt, &job.UpdatedAt,
 	)
 	if err != nil {
 		return domain.Job{}, fmt.Errorf("failed to get job: %w", err)
@@ -53,9 +53,9 @@ func (r *JobRepository) UpdateJobStatus(ctx context.Context, id string, status d
 	return err
 }
 
-func (r *JobRepository) UpdateJobResult(ctx context.Context, id string, status domain.Status, resultPath *string) error {
-	query := `UPDATE jobs SET status = $1, result_path = $2, updated_at = NOW() WHERE id = $3`
-	_, err := r.pool.Exec(ctx, query, string(status), resultPath, id)
+func (r *JobRepository) UpdateJobResult(ctx context.Context, id string, status domain.Status, resultURL *string) error {
+	query := `UPDATE jobs SET status = $1, result_url = $2, updated_at = NOW() WHERE id = $3`
+	_, err := r.pool.Exec(ctx, query, string(status), resultURL, id)
 	return err
 }
 
@@ -78,7 +78,7 @@ func (r *JobRepository) UpdateJobPreview(ctx context.Context, id string, preview
 }
 
 func (r *JobRepository) ListJobs(ctx context.Context) ([]domain.Job, error) {
-	query := `SELECT id, name, s3_path, frame_start, frame_end, worker_count, status, result_path, preview_url, completed_frames, created_at FROM jobs ORDER BY created_at DESC`
+	query := `SELECT id, name, main_file_url, frame_start, frame_end, worker_count, status, result_url, options, preview_url, completed_frames, created_at, updated_at FROM jobs ORDER BY created_at DESC`
 	rows, err := r.pool.Query(ctx, query)
 	if err != nil {
 		return nil, err
@@ -88,7 +88,11 @@ func (r *JobRepository) ListJobs(ctx context.Context) ([]domain.Job, error) {
 	var jobs []domain.Job
 	for rows.Next() {
 		var j domain.Job
-		err := rows.Scan(&j.ID, &j.Name, &j.S3Path, &j.FrameStart, &j.FrameEnd, &j.WorkerCount, &j.Status, &j.ResultPath, &j.PreviewURL, &j.CompletedFrames, &j.CreatedAt)
+		err := rows.Scan(
+			&j.ID, &j.Name, &j.MainFileURL, &j.FrameStart, &j.FrameEnd,
+			&j.WorkerCount, &j.Status, &j.ResultURL, &j.Options,
+			&j.PreviewURL, &j.CompletedFrames, &j.CreatedAt, &j.UpdatedAt,
+		)
 		if err != nil {
 			return nil, err
 		}

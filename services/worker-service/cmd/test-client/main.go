@@ -98,7 +98,7 @@ func main() {
 			ProjectID: *projectID,
 			TaskID:    fmt.Sprintf("test-%s", *projectID),
 		},
-		BlendFile: blendFile,
+		MainFileURL: blendFile,
 		CommonTask: domain.CommonTask{
 			StartFrame: *startFrame,
 			EndFrame:   *endFrame,

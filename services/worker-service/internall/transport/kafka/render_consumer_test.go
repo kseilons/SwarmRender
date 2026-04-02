@@ -34,7 +34,7 @@ func TestConsumer_Run(t *testing.T) {
 				ProjectID: "test-1",
 				TaskID:    "task-1",
 			},
-			BlendFile: "project.blend",
+			MainFileURL: "project.blend",
 		}
 		payload, _ := json.Marshal(task)
 		msg := kafka.Message{
@@ -53,7 +53,7 @@ func TestConsumer_Run(t *testing.T) {
 		mockReader.On("CommitMessages", mock.Anything, msg).Return(nil).Once()
 
 		_ = consumer.Run(ctx)
-		
+
 		mockReader.AssertExpectations(t)
 		mockRenderUC.AssertExpectations(t)
 	})
@@ -79,7 +79,7 @@ func TestConsumer_Run(t *testing.T) {
 		mockReader.On("CommitMessages", mock.Anything, msg).Return(nil).Once()
 
 		_ = consumer.Run(ctx)
-		
+
 		mockReader.AssertExpectations(t)
 	})
 
@@ -115,7 +115,7 @@ func TestConsumer_Run(t *testing.T) {
 		mockReader.On("CommitMessages", mock.Anything, msg).Return(nil).Once()
 
 		_ = consumer.Run(ctx)
-		
+
 		mockReader.AssertExpectations(t)
 		mockRenderUC.AssertExpectations(t)
 	})

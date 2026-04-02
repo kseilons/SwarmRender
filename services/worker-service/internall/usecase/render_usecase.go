@@ -60,7 +60,7 @@ func (uc *RenderUseCase) Execute(ctx context.Context, logger *slog.Logger, task 
 		return nil, err
 	}
 
-	blendPath := filepath.Join(tempDir, extractRelativePath(task.ProjectID, task.BlendFile))
+	blendPath := filepath.Join(tempDir, extractRelativePath(task.ProjectID, task.MainFileURL))
 	outputDir := filepath.Join(tempDir, "output")
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create output dir: %w", err)
@@ -72,10 +72,10 @@ func (uc *RenderUseCase) Execute(ctx context.Context, logger *slog.Logger, task 
 	progressChan := make(chan int, 10)
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
- 
+
 	done := make(chan struct{})
 	currentFrame := task.StartFrame
- 
+
 	go func() {
 		for {
 			select {
@@ -95,10 +95,10 @@ func (uc *RenderUseCase) Execute(ctx context.Context, logger *slog.Logger, task 
 			}
 		}
 	}()
- 
+
 	renderOutput, err := uc.renderer.Render(ctx, logger, job, progressChan)
 	close(done)
- 
+
 	if err != nil {
 		uc.reportError(ctx, logger, task, err)
 		return renderOutput, err
@@ -203,7 +203,7 @@ func (uc *RenderUseCase) isDeviceAllowed(device string) bool {
 	}
 	return false
 }
-func extractRelativePath(projectID, blendFile string) string {
+func extractRelativePath(projectID, mainFileURL string) string {
 	prefix := fmt.Sprintf("%s_sources/", projectID)
-	return strings.TrimPrefix(blendFile, prefix)
+	return strings.TrimPrefix(mainFileURL, prefix)
 }

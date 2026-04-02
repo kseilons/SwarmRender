@@ -61,7 +61,7 @@ func (uc *StitchingUseCase) Execute(ctx context.Context, logger *slog.Logger, ta
 	}
 
 	outputFile := filepath.Join(tempDir, "output.mp4")
-	
+
 	// Run FFmpeg via Stitcher
 	logger.Info("starting stitching", slog.Int("frame_count", len(frames)))
 	if err := uc.stitcher.Stitch(ctx, logger, tempDir, outputFile, frames); err != nil {
@@ -78,19 +78,19 @@ func (uc *StitchingUseCase) Execute(ctx context.Context, logger *slog.Logger, ta
 
 	// Report Success
 	err = uc.resultProducer.ReportResult(ctx, domain.RenderResult{
-		TaskID:     task.TaskID,
-		ProjectID:  task.ProjectID,
-		Type:       domain.TypeStitching,
-		Status:     domain.StatusCompleted,
-		WorkerID:   os.Getenv("HOSTNAME"),
-		ResultPath: resultPath,
+		TaskID:    task.TaskID,
+		ProjectID: task.ProjectID,
+		Type:      domain.TypeStitching,
+		Status:    domain.StatusCompleted,
+		WorkerID:  os.Getenv("HOSTNAME"),
+		ResultURL: resultPath,
 	})
 	if err != nil {
 		logger.Error("failed to report stitching result", slog.Any("error", err))
 		return err
 	}
 
-	logger.Info("stitching completed successfully", slog.String("result_path", resultPath))
+	logger.Info("stitching completed successfully", slog.String("result_url", resultPath))
 	return nil
 }
 
@@ -139,7 +139,7 @@ func (s *FFmpegStitcher) Stitch(ctx context.Context, logger *slog.Logger, frames
 
 	// ffmpeg -f concat -safe 0 -i frames.txt -c:v libx264 -pix_fmt yuv420p output.mp4
 	cmd := exec.CommandContext(ctx, "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", concatFile, "-c:v", "libx264", "-pix_fmt", "yuv420p", outputFile)
-	
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("ffmpeg failed: %w, output: %s", err, string(output))
@@ -157,7 +157,7 @@ func (s *FFmpegStitcher) createConcatFile(path string, frames []string) error {
 
 	for _, frame := range frames {
 		fmt.Fprintf(f, "file '%s'\n", frame)
-		fmt.Fprintf(f, "duration 0.04166666666\n") 
+		fmt.Fprintf(f, "duration 0.04166666666\n")
 	}
 	return nil
 }

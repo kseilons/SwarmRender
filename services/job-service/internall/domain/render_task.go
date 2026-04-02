@@ -39,25 +39,25 @@ type BaseTask struct {
 
 type MetadataTask struct {
 	BaseTask
-	BlendFile string `json:"blend_file"`
+	MainFileURL string `json:"main_file_url"`
 }
 
 type RenderTask struct {
 	BaseTask
-	CommonTask `json:",inline"`
-	BlendFile  string `json:"blend_file"`
+	CommonTask  `json:",inline"`
+	MainFileURL string `json:"main_file_url"`
 }
 
 type Job struct {
-	ID          string        `json:"id"`
-	Name        string        `json:"name"`
-	S3Path      string        `json:"s3_path"`
-	FrameStart  int           `json:"frame_start"`
-	FrameEnd    int           `json:"frame_end"`
-	WorkerCount int           `json:"worker_count"`
-	Status      Status        `json:"status"`
-	ResultPath  *string       `json:"result_path,omitempty"`
-	Options     RenderOptions `json:"options"`
+	ID              string        `json:"id"`
+	Name            string        `json:"name"`
+	MainFileURL     string        `json:"main_file_url"`
+	FrameStart      int           `json:"frame_start"`
+	FrameEnd        int           `json:"frame_end"`
+	WorkerCount     int           `json:"worker_count"`
+	Status          Status        `json:"status"`
+	ResultURL       *string       `json:"result_url,omitempty"`
+	Options         RenderOptions `json:"options"`
 	PreviewURL      *string       `json:"preview_url,omitempty"`
 	CompletedFrames int           `json:"completed_frames"`
 	CreatedAt       time.Time     `json:"created_at"`
@@ -65,14 +65,14 @@ type Job struct {
 }
 
 type Task struct {
-	ID         string    `json:"id"`
-	JobID      string    `json:"job_id"`
-	Type       TaskType  `json:"type"`
-	FrameStart int       `json:"frame_start"`
-	FrameEnd   int       `json:"frame_end"`
-	Status     Status    `json:"status"`
-	WorkerID   *string   `json:"worker_id,omitempty"`
-	ResultPath   *string   `json:"result_path,omitempty"`
+	ID           string    `json:"id"`
+	JobID        string    `json:"job_id"`
+	Type         TaskType  `json:"type"`
+	FrameStart   int       `json:"frame_start"`
+	FrameEnd     int       `json:"frame_end"`
+	Status       Status    `json:"status"`
+	WorkerID     *string   `json:"worker_id,omitempty"`
+	ResultURL    *string   `json:"result_url,omitempty"`
 	RetryCount   int       `json:"retry_count"`
 	CurrentFrame int       `json:"current_frame"`
 	CreatedAt    time.Time `json:"created_at"`
@@ -81,7 +81,7 @@ type Task struct {
 
 type CreateJobRequest struct {
 	Name        string        `json:"name" binding:"required"`
-	S3Path      string        `json:"s3_path" binding:"required"`
+	MainFileURL string        `json:"main_file_url" binding:"required"`
 	FrameStart  int           `json:"frame_start"`
 	FrameEnd    int           `json:"frame_end"`
 	WorkerCount int           `json:"worker_count" binding:"required"`
@@ -108,14 +108,14 @@ const (
 )
 
 type RenderResult struct {
-	TaskID     string           `json:"task_id"`
-	ProjectID  string           `json:"project_id"`
-	Type       TaskType         `json:"type"`
-	Status     Status           `json:"status"`
-	WorkerID   *string          `json:"worker_id"`
-	Error      string           `json:"error,omitempty"`
-	Metadata   *ProjectMetadata `json:"metadata,omitempty"`
-	ResultPath   *string          `json:"result_path,omitempty"`
+	TaskID       string           `json:"task_id"`
+	ProjectID    string           `json:"project_id"`
+	Type         TaskType         `json:"type"`
+	Status       Status           `json:"status"`
+	WorkerID     *string          `json:"worker_id"`
+	Error        string           `json:"error,omitempty"`
+	Metadata     *ProjectMetadata `json:"metadata,omitempty"`
+	ResultURL    *string          `json:"result_url,omitempty"`
 	CurrentFrame int              `json:"current_frame,omitempty"`
 }
 
@@ -125,17 +125,17 @@ type ClusterStats struct {
 
 type StitchingTask struct {
 	BaseTask
-	S3Path     string `json:"s3_path"`
-	FrameStart int    `json:"frame_start"`
-	FrameEnd   int    `json:"frame_end"`
-	Format     string `json:"format"`
+	MainFileURL string `json:"main_file_url"`
+	FrameStart  int    `json:"frame_start"`
+	FrameEnd    int    `json:"frame_end"`
+	Format      string `json:"format"`
 }
 
 func (t StitchingTask) LogAttrs() []any {
 	return []any{
 		slog.String("project_id", t.ProjectID),
 		slog.String("task_id", t.TaskID),
-		slog.String("s3_path", t.S3Path),
+		slog.String("main_file_url", t.MainFileURL),
 		slog.Int("f_start", t.FrameStart),
 		slog.Int("f_end", t.FrameEnd),
 	}
@@ -164,7 +164,7 @@ func (t MetadataTask) LogAttrs() []any {
 	return []any{
 		slog.String("project_id", t.ProjectID),
 		slog.String("task_id", t.TaskID),
-		slog.String("blend_file", t.BlendFile),
+		slog.String("main_file_url", t.MainFileURL),
 	}
 }
 
@@ -172,7 +172,7 @@ func (t RenderTask) LogAttrs() []any {
 	return []any{
 		slog.String("project_id", t.ProjectID),
 		slog.String("task_id", t.TaskID),
-		slog.String("blend_file", t.BlendFile),
+		slog.String("main_file_url", t.MainFileURL),
 		slog.Int("f_start", t.StartFrame),
 		slog.Int("f_end", t.EndFrame),
 	}

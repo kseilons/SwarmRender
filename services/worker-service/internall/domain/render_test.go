@@ -12,7 +12,7 @@ func TestRenderTask_LogAttrs(t *testing.T) {
 		BaseTask: BaseTask{
 			ProjectID: "proj-123",
 		},
-		BlendFile: "main.blend",
+		MainFileURL: "main.blend",
 		CommonTask: CommonTask{
 			StartFrame: 1,
 			EndFrame:   10,
@@ -33,7 +33,7 @@ func TestRenderTask_LogAttrs(t *testing.T) {
 	}
 
 	assert.Equal(t, "proj-123", attrMap["project_id"])
-	assert.Equal(t, "main.blend", attrMap["blend_file"])
+	assert.Equal(t, "main.blend", attrMap["main_file_url"])
 	assert.Equal(t, int64(1), attrMap["start_frame"])
 	assert.Equal(t, int64(10), attrMap["end_frame"])
 	assert.Equal(t, "CYCLES", attrMap["engine"])
