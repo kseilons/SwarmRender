@@ -717,6 +717,38 @@ select.form-input option {
   height: 0.5rem;
 }
 
+.w-8 {
+  width: 2rem;
+}
+
+.h-8 {
+  height: 2rem;
+}
+
+.w-10 {
+  width: 2.5rem;
+}
+
+.h-10 {
+  height: 2.5rem;
+}
+
+.w-11 {
+  width: 2.75rem;
+}
+
+.h-11 {
+  height: 2.75rem;
+}
+
+.w-12 {
+  width: 3rem;
+}
+
+.h-12 {
+  height: 3rem;
+}
+
 /* Typography Utilities */
 .text-xs {
   font-size: 0.75rem;

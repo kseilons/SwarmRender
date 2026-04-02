@@ -41,26 +41,9 @@ const JobCard: React.FC<{ job: Job }> = ({ job }) => {
         ) : (
           <PreviewPlaceholder name={job.name} />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60"></div>
         <div className="absolute top-3 left-3">
           <StatusBadge status={job.status} />
-        </div>
-        <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-          {job.status === 'COMPLETED' && job.result_path && (
-            <a
-              href={job.result_path}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-black hover:bg-emerald-400 transition-colors"
-              title={t('common.download_result')}
-            >
-              <Download size={14} />
-            </a>
-          )}
-          <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-black">
-            <Play size={14} fill="currentColor" />
-          </div>
         </div>
       </div>
 
@@ -93,7 +76,25 @@ const JobCard: React.FC<{ job: Job }> = ({ job }) => {
           <div className="flex items-center gap-2 text-white/40 text-[10px]">
             <Clock size={12} /> {new Date(job.created_at).toLocaleDateString()}
           </div>
-          <ChevronRight size={16} className="text-white/20 group-hover:text-white group-hover:translate-x-1 transition-all" />
+
+          <div className="flex items-center gap-3">
+            {job.status === 'COMPLETED' && job.result_path && (
+              <a
+                href={job.result_path}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white hover:bg-emerald-400 transition-all hover:scale-110 shadow-lg shadow-emerald-500/20"
+                title={t('common.download_result')}
+              >
+                <Download size={18} />
+              </a>
+            )}
+            <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white hover:scale-110 transition-all shadow-lg shadow-cyan-500/20">
+              <Play size={18} fill="currentColor" className="ml-0.5" />
+            </div>
+            <ChevronRight size={20} className="text-white/20 group-hover:text-white group-hover:translate-x-1 transition-all ml-1" />
+          </div>
         </div>
       </div>
     </motion.div>
