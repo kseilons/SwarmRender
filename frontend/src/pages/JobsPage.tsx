@@ -25,6 +25,25 @@ const JobCard: React.FC<{ job: Job }> = ({ job }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
+  const handleDownload = async (e: React.MouseEvent, url: string, filename: string) => {
+    e.stopPropagation(); // Prevent navigating to job details
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Download failed:', error);
+      window.open(url, '_blank');
+    }
+  };
+
   return (
     <motion.div
       layout
@@ -79,16 +98,13 @@ const JobCard: React.FC<{ job: Job }> = ({ job }) => {
 
           <div className="flex items-center gap-3">
             {job.status === 'COMPLETED' && job.result_url && (
-              <a
-                href={job.result_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white hover:bg-emerald-400 transition-all hover:scale-110 shadow-lg shadow-emerald-500/20"
+              <button
+                onClick={(e) => handleDownload(e, job.result_url!, `${job.name.replace(/\s+/g, '_')}_result.mp4`)}
+                className="w-8 h-8 bg-emerald-500 border-none cursor-pointer rounded-full flex items-center justify-center text-white hover:bg-emerald-400 transition-all hover:scale-110 shadow-lg shadow-emerald-500/20"
                 title={t('common.download_result')}
               >
                 <Download size={18} />
-              </a>
+              </button>
             )}
             <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white hover:scale-110 transition-all shadow-lg shadow-cyan-500/20">
               <Play size={18} fill="currentColor" className="ml-0.5" />

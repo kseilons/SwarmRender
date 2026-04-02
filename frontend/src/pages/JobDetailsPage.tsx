@@ -44,6 +44,24 @@ const JobDetailsPage: React.FC = () => {
   const hasFailedTasks = tasks?.some(t => t.status === 'FAILED');
   const canRetry = job?.status === 'FAILED' || hasFailedTasks;
 
+  const handleDownload = async (url: string, filename: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Download failed:', error);
+      window.open(url, '_blank');
+    }
+  };
+
   // WebSocket Subscription
   useEffect(() => {
     const unsubscribe = wsService.subscribe((msg) => {
@@ -101,15 +119,13 @@ const JobDetailsPage: React.FC = () => {
 
         <div className="flex gap-3">
           {job?.status === 'COMPLETED' && job?.result_url && (
-            <a
-              href={job.result_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="glass glass-interactive px-6 py-2.5 text-black hover:text-zinc-900 border-none bg-emerald-400 cursor-pointer flex items-center gap-2 text-sm font-bold rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all hover:scale-105 no-underline"
+            <button
+              onClick={() => handleDownload(job.result_url!, `${job.name.replace(/\s+/g, '_')}_result.mp4`)}
+              className="glass glass-interactive px-6 py-2.5 text-black hover:text-zinc-900 border-none bg-emerald-400 cursor-pointer flex items-center gap-2 text-sm font-bold rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all hover:scale-105"
             >
               <Download size={18} />
               {t('common.download_result')}
-            </a>
+            </button>
           )}
           {canRetry && (
             <button
@@ -160,11 +176,6 @@ const JobDetailsPage: React.FC = () => {
               ) : (
                 <PreviewPlaceholder name={job.name} size="lg" />
               )}
-              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button className="bg-black/80 backdrop-blur-md p-2.5 rounded-xl hover:bg-black transition-colors border border-white/10 text-white cursor-pointer shadow-2xl">
-                  <Maximize2 size={20} />
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -174,7 +185,7 @@ const JobDetailsPage: React.FC = () => {
           {/* Metadata Card */}
           <div className="glass p-8 relative overflow-hidden bg-white/[0.01]">
             <div className="absolute top-0 left-0 w-32 h-32 bg-cyan-500/5 blur-2xl rounded-full -ml-16 -mt-16"></div>
-            
+
             <div className="flex flex-col gap-9 relative z-10">
               <div className="space-y-4">
                 <span className="text-[11px] text-zinc-500 uppercase font-black tracking-[0.2em] block opacity-40">{t('job_details.engine')}</span>
