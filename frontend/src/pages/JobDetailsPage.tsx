@@ -5,6 +5,7 @@ import { jobService } from '../services/api';
 import { wsService } from '../services/ws';
 import { ChevronLeft, Cpu, HardDrive, Layout, Maximize2, RefreshCw, RotateCcw, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ProgressBar from '../components/common/ProgressBar';
 
 import { useTranslation } from '../context/LanguageContext';
 
@@ -45,10 +46,10 @@ const JobDetailsPage: React.FC = () => {
   // WebSocket Subscription
   useEffect(() => {
     const unsubscribe = wsService.subscribe((msg) => {
-      if (msg.type === 'task_update' && msg.task_id) {
+      if (msg.type === 'task_update' || msg.type === 'task_progress') {
         queryClient.invalidateQueries({ queryKey: ['job', id] });
       }
-      if (msg.type === 'job_update' && msg.job_id === id) {
+      if ((msg.type === 'job_update' || msg.type === 'job_progress') && msg.job_id === id) {
         queryClient.invalidateQueries({ queryKey: ['job', id] });
       }
     });
@@ -217,18 +218,29 @@ const JobDetailsPage: React.FC = () => {
                 const isCompleted = task.status === 'COMPLETED';
                 const isProcessing = task.status === 'PROCESSING';
                 const isFailed = task.status === 'FAILED';
-
+ 
+                const taskTotal = task.frame_end - task.frame_start + 1;
+                const taskCurrent = task.status === 'COMPLETED' ? taskTotal : 
+                                    Math.max(0, (task.current_frame || task.frame_start) - task.frame_start + 1);
+                const progressRatio = taskCurrent / taskTotal;
+ 
                 return (
                   <motion.div
                     key={i}
                     initial={{ height: 4 }}
-                    animate={{ height: isCompleted ? '100%' : isProcessing ? '40%' : '15%' }}
+                    animate={{ height: isCompleted ? '100%' : isProcessing ? `${Math.max(20, progressRatio * 100)}%` : '15%' }}
                     className={`flex-1 rounded-t-lg transition-all duration-700 min-h-[6px] ${isCompleted ? 'bg-emerald-500 shadow-[0_-5px_15px_rgba(16,185,129,0.2)]' :
                       isProcessing ? 'bg-cyan-500 pulsing shadow-[0_-5px_15px_rgba(6,182,212,0.2)]' :
                         isFailed ? 'bg-rose-500 opacity-50' :
                           'bg-white/10'
                       }`}
-                  ></motion.div>
+                  >
+                    {isProcessing && progressRatio > 0.1 && (
+                      <div className="absolute top-2 left-1/2 -translate-x-1/2 text-[8px] font-black text-black/60 bg-white/40 px-1 rounded-sm">
+                        {Math.round(progressRatio * 100)}%
+                      </div>
+                    )}
+                  </motion.div>
                 );
               })}
             </div>
@@ -274,6 +286,7 @@ const JobDetailsPage: React.FC = () => {
                   <th className="px-8 py-5 font-black border-b border-white/5">{t('job_details.th_node')}</th>
                   <th className="px-8 py-5 font-black border-b border-white/5 text-center">{t('job_details.th_type')}</th>
                   <th className="px-8 py-5 font-black border-b border-white/5 text-center">{t('job_details.th_frames')}</th>
+                  <th className="px-8 py-5 font-black border-b border-white/5">{t('job_details.th_progress') || 'Progress'}</th>
                   <th className="px-8 py-5 font-black border-b border-white/5 text-center">{t('job_details.th_state')}</th>
                   <th className="px-8 py-5 font-black border-b border-white/5">{t('job_details.th_worker')}</th>
                   <th className="px-8 py-5 font-black text-right border-b border-white/5">{t('job_details.th_sync')}</th>
@@ -307,6 +320,14 @@ const JobDetailsPage: React.FC = () => {
                         <div className="inline-flex items-center px-4 py-1.5 rounded-xl bg-white/[0.03] border border-white/5 font-mono text-zinc-400 text-xs shadow-inner">
                           {task.frame_start} <span className="mx-2 text-white/10">—</span> {task.frame_end}
                         </div>
+                      </td>
+                      <td className="px-8 py-6 min-w-[150px]">
+                        <ProgressBar 
+                          current={task.status === 'COMPLETED' ? (task.frame_end - task.frame_start + 1) : Math.max(0, (task.current_frame || task.frame_start) - task.frame_start + 1)}
+                          total={task.frame_end - task.frame_start + 1}
+                          height={4}
+                          showStats={true}
+                        />
                       </td>
                       <td className="px-8 py-6 text-center">
                         <StatusBadge status={task.status} />

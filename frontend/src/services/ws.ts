@@ -1,10 +1,12 @@
-type WSMessageType = 'job_update' | 'task_update';
+type WSMessageType = 'job_update' | 'task_update' | 'job_progress' | 'task_progress';
 
 interface WSMessage {
   type: WSMessageType;
   job_id?: string;
   task_id?: string;
-  status: string;
+  status?: string;
+  completed_frames?: number;
+  current_frame?: number;
 }
 
 type MessageHandler = (msg: WSMessage) => void;

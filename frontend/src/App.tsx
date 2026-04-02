@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { Plus, Box, Search } from 'lucide-react';
 import JobsPage from './pages/JobsPage';
 import JobDetailsPage from './pages/JobDetailsPage';
@@ -7,6 +7,7 @@ import CreateJobModal from './components/CreateJobModal';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { LanguageProvider, useTranslation } from './context/LanguageContext';
+import { SearchProvider, useSearch } from './context/SearchContext';
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,19 @@ const LanguageSwitcher = () => {
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isModalOpen, setModalOpen] = useState(false);
   const { t } = useTranslation();
+  const { searchQuery, setSearchQuery } = useSearch();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    
+    // Navigate home if we're not already there and there's a search query
+    if (location.pathname !== '/' && value.trim() !== '') {
+      navigate('/');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-transparent text-white flex flex-col">
@@ -58,6 +72,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               type="text" 
               placeholder={t('common.search_placeholder')}
               className="search-input"
+              value={searchQuery}
+              onChange={handleSearchChange}
             />
           </div>
           <button 
@@ -82,7 +98,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 function App() {
   return (
     <LanguageProvider>
-      <QueryClientProvider client={queryClient}>
+      <SearchProvider>
+        <QueryClientProvider client={queryClient}>
         <Router>
           <Layout>
             <Routes>
@@ -91,7 +108,8 @@ function App() {
             </Routes>
           </Layout>
         </Router>
-      </QueryClientProvider>
+        </QueryClientProvider>
+      </SearchProvider>
     </LanguageProvider>
   );
 }

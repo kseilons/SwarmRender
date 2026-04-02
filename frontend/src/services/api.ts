@@ -28,6 +28,7 @@ export interface Job {
   status: Status;
   result_path?: string;
   preview_url?: string;
+  completed_frames: number;
   options: RenderOptions;
   created_at: string;
   updated_at: string;
@@ -40,6 +41,7 @@ export interface Task {
   frame_start: number;
   frame_end: number;
   status: Status;
+  current_frame: number;
   worker_id?: string;
   result_path?: string;
   retry_count: number;

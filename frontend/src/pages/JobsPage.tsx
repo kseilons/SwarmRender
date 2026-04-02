@@ -6,6 +6,8 @@ import { Clock, HardDrive, Layers, ChevronRight, Play } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '../context/LanguageContext';
 import { wsService } from '../services/ws';
+import ProgressBar from '../components/common/ProgressBar';
+import { useSearch } from '../context/SearchContext';
 
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const { t } = useTranslation();
@@ -67,6 +69,16 @@ const JobCard: React.FC<{ job: Job }> = ({ job }) => {
           </div>
         </div>
 
+        {job.status === 'PROCESSING' && (
+          <div className="mt-5">
+            <ProgressBar 
+              current={job.completed_frames || 0} 
+              total={job.frame_end - job.frame_start + 1} 
+              height={4}
+            />
+          </div>
+        )}
+
         <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
           <div className="flex items-center gap-2 text-white/40 text-[10px]">
              <Clock size={12} /> {new Date(job.created_at).toLocaleDateString()}
@@ -81,6 +93,7 @@ const JobCard: React.FC<{ job: Job }> = ({ job }) => {
 const JobsPage: React.FC = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { searchQuery } = useSearch();
   const { data: jobs, isLoading, error } = useQuery({
     queryKey: ['jobs'],
     queryFn: jobService.listJobs,
@@ -89,7 +102,7 @@ const JobsPage: React.FC = () => {
   // WebSocket for real-time updates
   useEffect(() => {
     const unsubscribe = wsService.subscribe((msg) => {
-      if (msg.type === 'job_update') {
+      if (msg.type === 'job_update' || msg.type === 'job_progress') {
         queryClient.invalidateQueries({ queryKey: ['jobs'] });
       }
     });
@@ -110,6 +123,11 @@ const JobsPage: React.FC = () => {
     </div>
   );
 
+  const filteredJobs = jobs?.filter(job => 
+    job.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    job.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -120,18 +138,18 @@ const JobsPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {jobs?.map((job) => (
+        {filteredJobs?.map((job) => (
           <JobCard key={job.id} job={job} />
         ))}
       </div>
       
-      {jobs?.length === 0 && (
+      {filteredJobs?.length === 0 && (
         <div className="glass p-16 text-center border-dashed border-2 bg-transparent opacity-50">
           <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
             <Layers size={32} className="text-white/20" />
           </div>
-          <h3 className="text-xl font-semibold">{t('common.no_active_jobs')}</h3>
-          <p className="mt-2 text-sm text-white/40">{t('common.add_first_project')}</p>
+          <h3 className="text-xl font-semibold">{searchQuery ? t('common.no_results_found') || 'No results found' : t('common.no_active_jobs')}</h3>
+          <p className="mt-2 text-sm text-white/40">{searchQuery ? t('common.try_another_search') || 'Try another search query' : t('common.add_first_project')}</p>
         </div>
       )}
     </div>

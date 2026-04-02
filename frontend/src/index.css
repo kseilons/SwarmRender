@@ -262,7 +262,7 @@ main {
 
 .search-container {
   position: relative;
-  display: none;
+  display: block;
 }
 
 @media (min-width: 1024px) {
@@ -754,4 +754,55 @@ select.form-input option {
 @keyframes badge-pulse {
   0% { transform: scale(1); opacity: 0.5; }
   100% { transform: scale(1.3); opacity: 0; }
+}
+ 
+/* Progress Styles */
+.progress-container {
+  width: 100%;
+  position: relative;
+}
+ 
+.progress-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 99px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+ 
+.progress-fill-animate {
+  height: 100%;
+  background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+  border-radius: 99px;
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+ 
+.progress-fill-animate::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  animation: progress-shimmer 2s infinite linear;
+}
+ 
+@keyframes progress-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+ 
+.progress-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.3);
 }
