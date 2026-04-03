@@ -1,0 +1,8 @@
+env: local
+http:
+  port: 8082
+keycloak:
+  base_url: http://localhost:8080
+  realm: master
+  client_id: auth-service
+  client_secret: dummy-secret-override-with-env
