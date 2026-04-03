@@ -17,5 +17,6 @@ RUN apk add --no-cache ffmpeg
 WORKDIR /app
 
 COPY --from=builder /app/stitching-service .
+COPY config/config.yaml ./config/config.yaml
 
 CMD ["./stitching-service"]

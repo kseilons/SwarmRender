@@ -14,7 +14,7 @@ FROM alpine:latest
 WORKDIR /app
 
 COPY --from=builder /app/job-service .
-COPY config.yaml .
+COPY config/config.yaml ./config/config.yaml
 
 EXPOSE 8081
 

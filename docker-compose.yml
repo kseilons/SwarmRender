@@ -92,6 +92,15 @@ services:
     environment:
       - KAFKA_BROKERS=kafka:29092
       - MINIO_ENDPOINT=minio:9000
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     depends_on:
       kafka:
         condition: service_healthy
@@ -114,6 +123,23 @@ services:
       kafka:
         condition: service_healthy
       minio:
+        condition: service_healthy
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: keycloak-dev
+    command: start-dev
+    environment:
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://postgres:5432/dev_db
+      - KC_DB_USERNAME=admin
+      - KC_DB_PASSWORD=admin
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
         condition: service_healthy
 
 volumes:
