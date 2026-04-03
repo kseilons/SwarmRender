@@ -216,78 +216,81 @@ const JobDetailsPage: React.FC = () => {
             {/* Background Decoration */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
 
-              {job.status === 'COMPLETED' && job.result_url?.toLowerCase().split('?')[0].endsWith('.mp4') ? (
-                <div className="w-full aspect-video bg-zinc-900/50 rounded-2xl overflow-hidden glass border-white/5 group relative flex-shrink-0 flex items-center justify-center">
-                  <video
+            {job.status === 'COMPLETED' && job.result_url?.toLowerCase().split('?')[0].endsWith('.mp4') ? (
+              <div className="w-full aspect-video bg-zinc-900/50 rounded-2xl overflow-hidden glass border-white/5 group relative flex-shrink-0 flex items-center justify-center">
+                <video
                   src={job.result_url}
                   controls
                   className="w-full h-full object-cover"
                   poster={job.preview_url}
-                  />
-                </div>
-              ) : job.preview_url ? (
-                <div className="w-full aspect-video bg-zinc-900/50 rounded-2xl overflow-hidden glass border-white/5 group relative flex-shrink-0 flex items-center justify-center">
-                  <img src={job.preview_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="Job Preview" />
-                </div>
-              ) : (
-                <div className="w-full h-full aspect-video bg-zinc-900/50 rounded-2xl overflow-hidden glass border-white/5 group relative flex-shrink-0 flex items-center justify-center">
-                  <PreviewPlaceholder name={job.name} size="lg" />
-                </div>
-              )}
+                />
+              </div>
+            ) : job.preview_url ? (
+              <div className="w-full aspect-video bg-zinc-900/50 rounded-2xl overflow-hidden glass border-white/5 group relative flex-shrink-0 flex items-center justify-center">
+                <img src={job.preview_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="Job Preview" />
+              </div>
+            ) : (
+              <div className="w-full h-full aspect-video bg-zinc-900/50 rounded-2xl overflow-hidden glass border-white/5 group relative flex-shrink-0 flex items-center justify-center">
+                <PreviewPlaceholder name={job.name} size="lg" />
+              </div>
+            )}
           </div>
         </div>
 
         {/* Right Side: Meta Info & Progress (1/3 width, split vertically) */}
         <div className="lg:col-span-1 space-y-8">
           {/* Metadata Card */}
-          <div className="glass p-8 relative overflow-hidden bg-white/[0.01]">
+          <div className="glass p-6 relative overflow-hidden bg-white/[0.01] border-white/5 shadow-2xl">
             <div className="absolute top-0 left-0 w-32 h-32 bg-cyan-500/5 blur-2xl rounded-full -ml-16 -mt-16"></div>
 
-            <div className="flex flex-col gap-9 relative z-10">
-              <div className="space-y-4">
-                <span className="text-[11px] text-zinc-500 uppercase font-black tracking-[0.2em] block opacity-40">{t('job_details.engine')}</span>
-                <div className="flex items-center gap-5">
-                  <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 flex items-center justify-center text-cyan-400 border border-cyan-500/10 shadow-inner">
-                    <Cpu size={24} />
-                  </div>
-                  <span className="font-bold text-white text-2xl tracking-tight uppercase">{job.options.engine || 'EEVEE'}</span>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <span className="text-[11px] text-zinc-500 uppercase font-black tracking-[0.2em] block opacity-40">{t('job_details.frame_range')}</span>
-                <div className="flex items-center gap-5">
-                  <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 border border-purple-500/10 shadow-inner">
-                    <Layout size={24} />
-                  </div>
-                  <span className="font-bold text-white text-2xl tracking-tight">{job.frame_start} — {job.frame_end}</span>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <span className="text-[11px] text-zinc-500 uppercase font-black tracking-[0.2em] block opacity-40">{t('job_details.allocation')}</span>
-                <div className="flex items-center gap-5">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/10 shadow-inner">
-                    <HardDrive size={24} />
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-bold text-white text-2xl tracking-tight leading-none">{job.worker_count}</span>
-                    <span className="text-[10px] uppercase tracking-widest text-emerald-500/60 font-black">{t('common.workers')}</span>
-                  </div>
-                </div>
-              </div>
-
+            <div className="space-y-6 relative z-10">
+              {/* Scene Name at the Top */}
               {job.options.scene && (
-                <div className="space-y-4">
-                  <span className="text-[11px] text-zinc-500 uppercase font-black tracking-[0.2em] block opacity-40">{t('job_details.scene_name')}</span>
-                  <div className="flex items-center gap-5">
-                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/10 shadow-inner">
-                      <Layers size={24} />
-                    </div>
-                    <span className="font-bold text-white text-xl tracking-tight truncate">{job.options.scene}</span>
+                <div className="flex items-center gap-4 group p-3 -m-3 rounded-2xl hover:bg-white/[0.03] transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40 group-hover:text-amber-500 group-hover:bg-amber-500/10 transition-all border border-white/5 shadow-inner">
+                    <Layers size={18} />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-white/30 uppercase font-black tracking-[0.15em] leading-none mb-1.5">{t('job_details.scene_name')}</span>
+                    <span className="font-bold text-white text-lg tracking-tight truncate leading-tight group-hover:text-amber-500 transition-colors">{job.options.scene}</span>
                   </div>
                 </div>
               )}
+
+              <div className="grid grid-cols-1 gap-6 pt-2 border-t border-white/5">
+                <div className="flex items-center gap-4 group p-3 -m-3 rounded-2xl hover:bg-white/[0.03] transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40 group-hover:text-cyan-400 group-hover:bg-cyan-500/10 transition-all border border-white/5 shadow-inner">
+                    <Cpu size={18} />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-white/30 uppercase font-black tracking-[0.15em] leading-none mb-1.5">{t('job_details.engine')}</span>
+                    <span className="font-bold text-white text-lg tracking-tight uppercase leading-tight group-hover:text-cyan-400 transition-colors">{job.options.engine || 'EEVEE'}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 group p-3 -m-3 rounded-2xl hover:bg-white/[0.03] transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40 group-hover:text-purple-400 group-hover:bg-purple-500/10 transition-all border border-white/5 shadow-inner">
+                    <Layout size={18} />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-white/30 uppercase font-black tracking-[0.15em] leading-none mb-1.5">{t('job_details.frame_range')}</span>
+                    <span className="font-bold text-white text-lg tracking-tight leading-tight group-hover:text-purple-400 transition-colors">{job.frame_start} — {job.frame_end}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 group p-3 -m-3 rounded-2xl hover:bg-white/[0.03] transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40 group-hover:text-emerald-400 group-hover:bg-emerald-500/10 transition-all border border-white/5 shadow-inner">
+                    <HardDrive size={18} />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-white/30 uppercase font-black tracking-[0.15em] leading-none mb-1.5">{t('job_details.allocation')}</span>
+                    <div className="flex items-baseline gap-2 leading-tight">
+                      <span className="font-bold text-white text-lg tracking-tight mr-1 group-hover:text-emerald-400 transition-colors">{job.worker_count}</span>
+                      <span className="text-[9px] uppercase tracking-widest text-white/20 font-black">{t('common.workers')}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -327,18 +330,20 @@ const JobDetailsPage: React.FC = () => {
             </div>
 
             <div className="mt-auto relative z-10">
-              <div className="flex justify-between items-center text-[9px] uppercase font-bold text-white/20 tracking-widest pt-5 border-t border-white/5">
-                <div className="flex flex-col gap-1">
-                  <span className="text-white/40 font-mono">0%</span>
-                  <span>{t('common.start')}</span>
+              <div className="mt-8 space-y-4">
+                <div className="flex justify-between items-center px-1">
+                  <span className="text-[10px] text-white/40 uppercase font-black tracking-widest">{t('job_details.completed_frames')}</span>
+                  <span className="text-xl font-bold text-white tabular-nums">
+                    {job.completed_frames} <span className="text-white/20 text-xs ml-1 font-medium">/ {job.frame_end - job.frame_start + 1}</span>
+                  </span>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  <span className="text-white/40 font-mono">100%</span>
-                  <span>{t('common.end')}</span>
-                </div>
-              </div>
-              <div className="text-center mt-6">
-                <span className="text-[9px] text-cyan-400/30 font-black uppercase tracking-[0.2em]">{t('job_details.realtime_cluster_metrics')}</span>
+
+                <ProgressBar
+                  current={job.completed_frames}
+                  total={job.frame_end - job.frame_start + 1}
+                  height={8}
+                  showStats={false}
+                />
               </div>
             </div>
           </div>
