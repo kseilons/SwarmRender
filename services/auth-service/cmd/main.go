@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/Nerzal/gocloak/v13"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,7 +21,8 @@ func main() {
 	log := logger.SetupLogger(cfg.Env)
 	log.Info("starting auth-service", slog.String("env", cfg.Env))
 
-	authUseCase := usecase.NewAuthUseCase(cfg.Keycloak)
+	keycloakClient := gocloak.NewClient(cfg.Keycloak.BaseURL)
+	authUseCase := usecase.NewAuthUseCase(keycloakClient, cfg.Keycloak)
 
 	handler := http.NewHandler(authUseCase, log)
 

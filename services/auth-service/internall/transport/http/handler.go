@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+//go:generate mockery --name AuthUseCase --output ./mocks --case underscore
 type AuthUseCase interface {
 	Login(ctx context.Context, username, password string) (*domain.TokenResponse, error)
 	Register(ctx context.Context, req domain.RegisterRequest) error

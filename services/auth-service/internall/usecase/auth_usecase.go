@@ -9,14 +9,23 @@ import (
 	"github.com/Nerzal/gocloak/v13"
 )
 
+//go:generate mockery --name KeycloakClient --output ./mocks --case underscore
+type KeycloakClient interface {
+	Login(ctx context.Context, clientID, clientSecret, realm, username, password string) (*gocloak.JWT, error)
+	LoginAdmin(ctx context.Context, username, password, realm string) (*gocloak.JWT, error)
+	CreateUser(ctx context.Context, token, realm string, user gocloak.User) (string, error)
+	SetPassword(ctx context.Context, token, userID, realm, password string, temporary bool) error
+	RefreshToken(ctx context.Context, refreshToken, clientID, clientSecret, realm string) (*gocloak.JWT, error)
+}
+
 type AuthUseCase struct {
-	client *gocloak.GoCloak
+	client KeycloakClient
 	cfg    config.KeycloakConfig
 }
 
-func NewAuthUseCase(cfg config.KeycloakConfig) *AuthUseCase {
+func NewAuthUseCase(client KeycloakClient, cfg config.KeycloakConfig) *AuthUseCase {
 	return &AuthUseCase{
-		client: gocloak.NewClient(cfg.BaseURL),
+		client: client,
 		cfg:    cfg,
 	}
 }
