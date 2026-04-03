@@ -181,7 +181,6 @@ func (uc *JobUseCase) SplitJobIntoTasks(ctx context.Context, job domain.Job, log
 	}
 
 	// Send to Kafka
-	topic := uc.kafkaCfg.RenderTopic
 	for _, t := range tasks {
 		renderTask := domain.RenderTask{
 			BaseTask: domain.BaseTask{
@@ -196,8 +195,9 @@ func (uc *JobUseCase) SplitJobIntoTasks(ctx context.Context, job domain.Job, log
 			MainFileURL: job.MainFileURL,
 		}
 
+		topic := uc.getRenderTopic(job.Options)
 		if err := uc.producer.SendTask(ctx, job.ID, renderTask, topic); err != nil {
-			logger.Error("failed to send render task", slog.String("task_id", t.ID), slog.Any("error", err))
+			logger.Error("failed to send render task", slog.String("task_id", t.ID), slog.String("topic", topic), slog.Any("error", err))
 		}
 	}
 
@@ -573,7 +573,6 @@ func (uc *JobUseCase) RetryJob(ctx context.Context, jobID string, logger *slog.L
 	}
 
 	// Send to Kafka
-	topic := uc.kafkaCfg.RenderTopic
 	for _, t := range resetTasks {
 		renderTask := domain.RenderTask{
 			BaseTask: domain.BaseTask{
@@ -588,12 +587,27 @@ func (uc *JobUseCase) RetryJob(ctx context.Context, jobID string, logger *slog.L
 			MainFileURL: job.MainFileURL,
 		}
 
+		topic := uc.getRenderTopic(job.Options)
 		if err := uc.producer.SendTask(ctx, job.ID, renderTask, topic); err != nil {
-			logger.Error("failed to re-send render task", slog.String("task_id", t.ID), slog.Any("error", err))
+			logger.Error("failed to re-send render task", slog.String("task_id", t.ID), slog.String("topic", topic), slog.Any("error", err))
 		}
 	}
 
 	return uc.UpdateJobStatus(ctx, job.ID, domain.StatusProcessing, logger)
+}
+
+func (uc *JobUseCase) getRenderTopic(options domain.RenderOptions) string {
+	baseTopic := uc.kafkaCfg.RenderTopic
+	if baseTopic == "" {
+		baseTopic = "render-tasks"
+	}
+
+	device := strings.ToLower(options.CyclesDevice)
+	if device == "" {
+		device = "cpu"
+	}
+
+	return fmt.Sprintf("%s-%s", baseTopic, device)
 }
 
 func (uc *JobUseCase) GenerateUploadURL(ctx context.Context, filename string, projectID string) (string, string, error) {

@@ -3,7 +3,9 @@ package kafka
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
+	"strings"
 
 	"time"
 
@@ -34,11 +36,23 @@ type Consumer struct {
 	logger     *slog.Logger
 }
 
-func NewConsumer(cfg config.KafkaConfig, renderUC RenderUseCase, metadataUC MetadataUseCase, logger *slog.Logger) *Consumer {
+func NewConsumer(cfg config.KafkaConfig, renderUC RenderUseCase, metadataUC MetadataUseCase, logger *slog.Logger, allowedDevices []string) *Consumer {
+	topics := []string{cfg.MetadataTopic}
+	if cfg.MetadataTopic == "" {
+		topics = []string{"metadata-tasks"}
+	}
+
+	for _, device := range allowedDevices {
+		topic := fmt.Sprintf("%s-%s", cfg.RenderTopic, strings.ToLower(device))
+		topics = append(topics, topic)
+	}
+
+	logger.Info("subscribing to topics", slog.Any("topics", topics))
+
 	return &Consumer{
 		reader: kafka.NewReader(kafka.ReaderConfig{
 			Brokers:     cfg.Brokers,
-			GroupTopics: []string{cfg.RenderTopic, cfg.MetadataTopic},
+			GroupTopics: topics,
 			GroupID:     cfg.GroupID,
 			MinBytes:    1,
 			MaxBytes:    10e6, // 10MB
@@ -65,6 +79,7 @@ func (c *Consumer) Run(ctx context.Context) error {
 		}
 
 		c.logger.Info("received message from kafka",
+			slog.String("topic", msg.Topic),
 			slog.String("key", string(msg.Key)),
 			slog.Int("partition", msg.Partition),
 			slog.Int64("offset", msg.Offset),
@@ -87,14 +102,14 @@ func (c *Consumer) Run(ctx context.Context) error {
 				taskLog.Info("metadata task completed successfully")
 			}
 
-		case msg.Topic == "render-tasks":
+		case strings.HasPrefix(msg.Topic, "render-tasks"):
 			var task domain.RenderTask
 			if err := json.Unmarshal(msg.Value, &task); err != nil {
 				c.logger.Error("failed to unmarshal render task", slog.Any("error", err))
 				break
 			}
 			taskLog := c.logger.With(task.LogAttrs()...)
-			taskLog.Info("processing render task")
+			taskLog.Info("processing render task", slog.String("topic", msg.Topic))
 			_, taskErr = c.renderUC.Execute(ctx, taskLog, task)
 			if taskErr != nil {
 				taskLog.Error("failed to execute render task", slog.Any("error", taskErr))
