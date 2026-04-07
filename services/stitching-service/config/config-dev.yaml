@@ -10,6 +10,6 @@ minio:
   endpoint: "minio:9000"
   access_key: "admin"
   secret_key: "password"
-  bucket: "projects"
+  bucket: "blender-renders"
   use_ssl: false
-  output_bucket: "results"
+  output_bucket: "blender-renders"

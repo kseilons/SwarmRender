@@ -21,5 +21,5 @@ minio:
   access_key: "admin"
   secret_key: "password"
   use_ssl: false
-  bucket: "projects"
+  bucket: "blender-renders"
   presigned_expiry: 3600
