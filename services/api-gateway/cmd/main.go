@@ -31,11 +31,14 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	router := gin.Default()
+	router.RedirectTrailingSlash = false
+	router.RedirectFixedPath = false
 
 	router.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, PATCH")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+		c.Writer.Header().Set("Access-Control-Max-Age", "3600")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
@@ -52,6 +55,8 @@ func main() {
 	rJobs := router.Group("/")
 	rJobs.Use(authMiddleware.Authenticate())
 	{
+		// Handle both /jobs and /jobs/xxx explicitly
+		rJobs.Any("/jobs", proxyHandler.ProxyJob())
 		rJobs.Any("/jobs/*path", proxyHandler.ProxyJob())
 		rJobs.Any("/ws/*path", proxyHandler.ProxyJob())
 	}
