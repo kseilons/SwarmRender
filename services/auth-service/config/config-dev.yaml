@@ -1,0 +1,8 @@
+env: "dev"
+http:
+  port: 8082
+keycloak:
+  base_url: "http://keycloak:8080"
+  realm: "render-farm"
+  client_id: "auth-service"
+  client_secret: "secret"

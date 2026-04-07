@@ -45,7 +45,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics
 WORKDIR /app
 
 COPY --from=builder /app/worker-service .
-COPY config/config.yaml ./config/config.yaml
+COPY config/ config/
 
 EXPOSE 8081
 

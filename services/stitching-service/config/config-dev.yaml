@@ -1,0 +1,15 @@
+env: "dev"
+http:
+  address: "0.0.0.0:8082"
+kafka:
+  brokers: ["kafka:29092"]
+  consumer_group: "stitching-group"
+  input_topic: "stitching-tasks"
+  result_topic: "render-results"
+minio:
+  endpoint: "minio:9000"
+  access_key: "admin"
+  secret_key: "password"
+  bucket: "projects"
+  use_ssl: false
+  output_bucket: "results"

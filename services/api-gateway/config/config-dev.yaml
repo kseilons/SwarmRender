@@ -1,0 +1,8 @@
+env: "dev"
+http:
+  port: 8000
+services:
+  auth_service: "http://auth-service:8082"
+  job_service: "http://job-service:8081"
+keycloak:
+  jwks_url: "http://keycloak:8080/realms/render-farm/protocol/openid-connect/certs"

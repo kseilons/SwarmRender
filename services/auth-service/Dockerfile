@@ -14,7 +14,7 @@ FROM alpine:latest
 WORKDIR /app
 
 COPY --from=builder /app/auth-service .
-COPY config/config.yaml ./config/config.yaml
+COPY config/ config/
 
 EXPOSE 8082
 
