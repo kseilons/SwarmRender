@@ -78,6 +78,11 @@ services:
     environment:
       - DB_URL=postgres://admin:admin@postgres:5432/dev_db?sslmode=disable
       - KAFKA_BROKERS=kafka:29092
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     depends_on:
       postgres:
         condition: service_healthy
@@ -162,6 +167,11 @@ services:
       - KEYCLOAK_CLIENT_ID=auth-service
       - KEYCLOAK_CLIENT_SECRET=secret
       - HTTP_PORT=8082
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8082/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     depends_on:
       keycloak:
         condition: service_healthy
