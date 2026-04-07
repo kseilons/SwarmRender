@@ -76,6 +76,23 @@ func (c *Consumer) Run(ctx context.Context) error {
 			continue
 		}
 
+		if result.Status == domain.StatusFailed {
+			c.logger.Warn("task failed",
+				slog.String("task_id", result.TaskID),
+				slog.String("error", result.Error),
+			)
+
+			jobID := result.ProjectID
+			if jobID == "" && len(result.TaskID) > 5 {
+				jobID = result.TaskID[5:]
+			}
+
+			if err := c.useCase.UpdateJobStatus(ctx, jobID, domain.StatusFailed, c.logger); err != nil {
+				c.logger.Error("failed to mark job as failed", slog.Any("error", err))
+			}
+			continue
+		}
+
 		switch result.Type {
 		case domain.TypeMetadata:
 			if result.Metadata == nil {
@@ -102,13 +119,6 @@ func (c *Consumer) Run(ctx context.Context) error {
 
 		default:
 			c.logger.Warn("received unknown result type", slog.String("type", string(result.Type)))
-		}
-
-		if result.Error != "" {
-			c.logger.Warn("result contains error",
-				slog.String("task_id", result.TaskID),
-				slog.String("error", result.Error),
-			)
 		}
 
 		// (Actual logic for updating the DB would go here)
