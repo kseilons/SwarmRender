@@ -176,6 +176,26 @@ services:
       keycloak:
         condition: service_healthy
 
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - AUTH_SERVICE_URL=http://auth-service:8082
+      - JOB_SERVICE_URL=http://job-service:8081
+      - KEYCLOAK_JWKS_URL=http://keycloak:8080/realms/render-farm/protocol/openid-connect/certs
+      - HTTP_PORT=8000
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      job-service:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   minio_data:
