@@ -16,7 +16,6 @@ import (
 	"kseilons/job-service/internall/usecase"
 	"kseilons/job-service/pkg/logger"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -119,7 +118,6 @@ func (a *App) initHandlers() {
 	router.GET("/health", func(c *gin.Context) {
 		c.Status(http.StatusOK)
 	})
-	router.Use(cors.Default())
 	router.Use(transport_http.AuthMiddleware())
 
 	// Register Groups
