@@ -54,6 +54,7 @@ func main() {
 		// Handle both /jobs and /jobs/xxx explicitly
 		rJobs.Any("/jobs", proxyHandler.ProxyJob())
 		rJobs.Any("/jobs/*path", proxyHandler.ProxyJob())
+		rJobs.Any("/stats", proxyHandler.ProxyJob())
 		rJobs.Any("/ws/*path", proxyHandler.ProxyJob())
 	}
 
