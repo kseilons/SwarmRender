@@ -1,0 +1,125 @@
+/* SwarmRender Custom Keycloak Login Theme */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg-deep: #0f0f0f;
+  --bg-surface: #1a1a1a;
+  --accent-primary: #00d2ff;
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+body {
+  background: radial-gradient(circle at top right, #0d0d1a, var(--bg-deep) 60%) !important;
+  background-attachment: fixed !important;
+  font-family: 'Inter', sans-serif !important;
+  color: var(--text-primary) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#kc-header {
+  display: none !important;
+}
+
+.login-pf-page {
+  background: none !important;
+}
+
+.card-pf {
+  background: rgba(20, 20, 25, 0.7) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5) !important;
+  padding: 40px !important;
+  width: 100% !important;
+  max-width: 440px !important;
+  margin-top: 20px !important;
+}
+
+#kc-page-title {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  text-align: center !important;
+  margin-bottom: 30px !important;
+  color: var(--text-primary) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+.form-control {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+  padding: 12px 16px !important;
+  color: white !important;
+  font-size: 14px !important;
+  outline: none !important;
+  transition: all 0.2s !important;
+}
+
+.form-control:focus {
+  border-color: rgba(0, 210, 255, 0.4) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 0 0 4px rgba(0, 210, 255, 0.05) !important;
+}
+
+.btn-primary {
+  background: var(--accent-primary) !important;
+  color: black !important;
+  padding: 12px 20px !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  border: none !important;
+  width: 100% !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 4px 15px rgba(0, 210, 255, 0.2) !important;
+  margin-top: 10px !important;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(0, 210, 255, 0.4) !important;
+  background: #33e1ff !important;
+}
+
+#kc-registration {
+  text-align: center !important;
+  margin-top: 20px !important;
+  color: var(--text-secondary) !important;
+  font-size: 13px !important;
+}
+
+#kc-registration a {
+  color: var(--accent-primary) !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+}
+
+#kc-registration a:hover {
+  text-decoration: underline !important;
+}
+
+.checkbox label {
+  color: var(--text-secondary) !important;
+}
+
+input[type="checkbox"] {
+  accent-color: var(--accent-primary) !important;
+}
+
+label {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: rgba(255, 255, 255, 0.4) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  margin-bottom: 6px !important;
+}

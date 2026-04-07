@@ -23,10 +23,19 @@ echo "Keycloak is up!"
 
 # Check if realm exists
 if /opt/keycloak/bin/kcadm.sh get "realms/$REALM_NAME" > /dev/null 2>&1; then
-  echo "Realm $REALM_NAME already exists."
+  echo "Realm $REALM_NAME already exists. Updating settings..."
+  /opt/keycloak/bin/kcadm.sh update "realms/$REALM_NAME" \
+    -s registrationAllowed=true \
+    -s resetPasswordAllowed=true \
+    -s rememberMe=true \
+    -s loginTheme=swarmrender
 else
   echo "Creating realm $REALM_NAME..."
-  /opt/keycloak/bin/kcadm.sh create realms -s realm="$REALM_NAME" -s enabled=true
+  /opt/keycloak/bin/kcadm.sh create realms -s realm="$REALM_NAME" -s enabled=true \
+    -s registrationAllowed=true \
+    -s resetPasswordAllowed=true \
+    -s rememberMe=true \
+    -s loginTheme=swarmrender
 fi
 
 # Check if confidential client exists (auth-service)

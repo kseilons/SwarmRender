@@ -146,6 +146,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - ./services/auth-service/themes:/opt/keycloak/themes
 
   auth-service:
     build:
@@ -169,6 +171,7 @@ services:
     container_name: keycloak-setup
     volumes:
       - ./services/auth-service/scripts/keycloak-setup.sh:/scripts/keycloak-setup.sh
+      - ./services/auth-service/themes:/opt/keycloak/themes
     environment:
       - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=admin
