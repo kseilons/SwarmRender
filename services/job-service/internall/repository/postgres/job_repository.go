@@ -18,12 +18,12 @@ func NewJobRepository(pool *pgxpool.Pool) *JobRepository {
 
 func (r *JobRepository) CreateJob(ctx context.Context, job domain.Job) error {
 	query := `
-		INSERT INTO jobs (id, name, main_file_url, frame_start, frame_end, worker_count, status, result_url, options, preview_url, completed_frames, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		INSERT INTO jobs (id, name, main_file_url, frame_start, frame_end, worker_count, status, result_url, options, preview_url, completed_frames, owner_id, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 	`
 	_, err := r.pool.Exec(ctx, query,
 		job.ID, job.Name, job.MainFileURL, job.FrameStart, job.FrameEnd,
-		job.WorkerCount, job.Status, job.ResultURL, job.Options, job.PreviewURL, job.CompletedFrames, job.CreatedAt, job.UpdatedAt,
+		job.WorkerCount, job.Status, job.ResultURL, job.Options, job.PreviewURL, job.CompletedFrames, job.OwnerID, job.CreatedAt, job.UpdatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to insert job: %w", err)
@@ -31,15 +31,22 @@ func (r *JobRepository) CreateJob(ctx context.Context, job domain.Job) error {
 	return nil
 }
 
-func (r *JobRepository) GetJob(ctx context.Context, id string) (domain.Job, error) {
+func (r *JobRepository) GetJob(ctx context.Context, id string, ownerID string) (domain.Job, error) {
 	query := `
-		SELECT id, name, main_file_url, frame_start, frame_end, worker_count, status, result_url, options, preview_url, completed_frames, created_at, updated_at
+		SELECT id, name, main_file_url, frame_start, frame_end, worker_count, status, result_url, options, preview_url, completed_frames, owner_id, created_at, updated_at
 		FROM jobs WHERE id = $1
 	`
+	args := []interface{}{id}
+
+	if ownerID != "" {
+		query += " AND owner_id = $2"
+		args = append(args, ownerID)
+	}
+
 	var job domain.Job
-	err := r.pool.QueryRow(ctx, query, id).Scan(
+	err := r.pool.QueryRow(ctx, query, args...).Scan(
 		&job.ID, &job.Name, &job.MainFileURL, &job.FrameStart, &job.FrameEnd,
-		&job.WorkerCount, &job.Status, &job.ResultURL, &job.Options, &job.PreviewURL, &job.CompletedFrames, &job.CreatedAt, &job.UpdatedAt,
+		&job.WorkerCount, &job.Status, &job.ResultURL, &job.Options, &job.PreviewURL, &job.CompletedFrames, &job.OwnerID, &job.CreatedAt, &job.UpdatedAt,
 	)
 	if err != nil {
 		return domain.Job{}, fmt.Errorf("failed to get job: %w", err)
@@ -77,9 +84,18 @@ func (r *JobRepository) UpdateJobPreview(ctx context.Context, id string, preview
 	return err
 }
 
-func (r *JobRepository) ListJobs(ctx context.Context) ([]domain.Job, error) {
-	query := `SELECT id, name, main_file_url, frame_start, frame_end, worker_count, status, result_url, options, preview_url, completed_frames, created_at, updated_at FROM jobs ORDER BY created_at DESC`
-	rows, err := r.pool.Query(ctx, query)
+func (r *JobRepository) ListJobs(ctx context.Context, ownerID string) ([]domain.Job, error) {
+	query := `SELECT id, name, main_file_url, frame_start, frame_end, worker_count, status, result_url, options, preview_url, completed_frames, owner_id, created_at, updated_at FROM jobs`
+	args := []interface{}{}
+
+	if ownerID != "" {
+		query += " WHERE owner_id = $1"
+		args = append(args, ownerID)
+	}
+
+	query += " ORDER BY created_at DESC"
+
+	rows, err := r.pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +107,7 @@ func (r *JobRepository) ListJobs(ctx context.Context) ([]domain.Job, error) {
 		err := rows.Scan(
 			&j.ID, &j.Name, &j.MainFileURL, &j.FrameStart, &j.FrameEnd,
 			&j.WorkerCount, &j.Status, &j.ResultURL, &j.Options,
-			&j.PreviewURL, &j.CompletedFrames, &j.CreatedAt, &j.UpdatedAt,
+			&j.PreviewURL, &j.CompletedFrames, &j.OwnerID, &j.CreatedAt, &j.UpdatedAt,
 		)
 		if err != nil {
 			return nil, err

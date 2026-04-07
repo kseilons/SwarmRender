@@ -15,13 +15,13 @@ import (
 
 type JobRepository interface {
 	CreateJob(ctx context.Context, job domain.Job) error
-	GetJob(ctx context.Context, id string) (domain.Job, error)
+	GetJob(ctx context.Context, id string, ownerID string) (domain.Job, error)
 	UpdateJobStatus(ctx context.Context, id string, status domain.Status) error
 	UpdateJobResult(ctx context.Context, id string, status domain.Status, resultURL *string) error
 	UpdateJobPreview(ctx context.Context, id string, previewPath string) error
 	UpdateJobMetadata(ctx context.Context, id string, frameStart, frameEnd int) error
 	UpdateJobProgress(ctx context.Context, id string, completedFrames int) error
-	ListJobs(ctx context.Context) ([]domain.Job, error)
+	ListJobs(ctx context.Context, ownerID string) ([]domain.Job, error)
 }
 
 type TaskRepository interface {
@@ -69,9 +69,10 @@ func (uc *JobUseCase) SetKafkaConfig(cfg config.KafkaConfig) {
 	uc.kafkaCfg = cfg
 }
 
-func (uc *JobUseCase) CreateJob(ctx context.Context, req domain.CreateJobRequest, logger *slog.Logger) (domain.Job, error) {
+func (uc *JobUseCase) CreateJob(ctx context.Context, req domain.CreateJobRequest, user domain.AuthUser, logger *slog.Logger) (domain.Job, error) {
 	job := domain.Job{
 		ID:          uuid.New().String(),
+		OwnerID:     user.ID,
 		Name:        req.Name,
 		MainFileURL: req.MainFileURL,
 		FrameStart:  req.FrameStart,
@@ -215,7 +216,7 @@ func (uc *JobUseCase) HandleMetadataResult(ctx context.Context, jobID string, fr
 		return fmt.Errorf("failed to update job metadata: %w", err)
 	}
 
-	job, err := uc.jobRepo.GetJob(ctx, jobID)
+	job, err := uc.jobRepo.GetJob(ctx, jobID, "")
 	if err != nil {
 		return fmt.Errorf("failed to get job after metadata update: %w", err)
 	}
@@ -261,7 +262,7 @@ func (uc *JobUseCase) HandleTaskResult(ctx context.Context, result domain.Render
 
 	if stats[domain.StatusCompleted] == totalTasks {
 		logger.Info("all tasks completed, transitioning job to STITCHING", slog.String("job_id", jobID))
-		job, err := uc.jobRepo.GetJob(ctx, jobID)
+		job, err := uc.jobRepo.GetJob(ctx, jobID, "")
 		if err != nil {
 			logger.Error("failed to get job for stitching", slog.String("job_id", jobID), slog.Any("error", err))
 			return nil
@@ -279,7 +280,7 @@ func (uc *JobUseCase) HandleTaskResult(ctx context.Context, result domain.Render
 
 	// Preview generation logic
 	if result.Status == domain.StatusCompleted && result.Type == domain.TypeRender {
-		job, err := uc.jobRepo.GetJob(ctx, jobID)
+		job, err := uc.jobRepo.GetJob(ctx, jobID, "")
 		if err == nil && (job.PreviewURL == nil || *job.PreviewURL == "") {
 			task, err := uc.taskRepo.GetTask(ctx, result.TaskID)
 			if err == nil {
@@ -448,8 +449,8 @@ func (uc *JobUseCase) UpdateJobStatus(ctx context.Context, id string, status dom
 	return nil
 }
 
-func (uc *JobUseCase) GetJob(ctx context.Context, id string) (domain.JobResponse, error) {
-	job, err := uc.jobRepo.GetJob(ctx, id)
+func (uc *JobUseCase) GetJob(ctx context.Context, id string, user domain.AuthUser) (domain.JobResponse, error) {
+	job, err := uc.jobRepo.GetJob(ctx, id, user.ID)
 	if err != nil {
 		return domain.JobResponse{}, err
 	}
@@ -525,8 +526,8 @@ func (uc *JobUseCase) generatePreview(ctx context.Context, job domain.Job, task 
 	logger.Error("failed to generate preview after multiple attempts", slog.Any("error", lastErr))
 }
 
-func (uc *JobUseCase) ListJobs(ctx context.Context) ([]domain.Job, error) {
-	jobs, err := uc.jobRepo.ListJobs(ctx)
+func (uc *JobUseCase) ListJobs(ctx context.Context, user domain.AuthUser) ([]domain.Job, error) {
+	jobs, err := uc.jobRepo.ListJobs(ctx, user.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -554,10 +555,10 @@ func (uc *JobUseCase) ListJobs(ctx context.Context) ([]domain.Job, error) {
 	return jobs, nil
 }
 
-func (uc *JobUseCase) RetryJob(ctx context.Context, jobID string, logger *slog.Logger) error {
+func (uc *JobUseCase) RetryJob(ctx context.Context, jobID string, user domain.AuthUser, logger *slog.Logger) error {
 	logger.Info("retrying failed tasks for job", slog.String("job_id", jobID))
 
-	job, err := uc.jobRepo.GetJob(ctx, jobID)
+	job, err := uc.jobRepo.GetJob(ctx, jobID, user.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get job: %w", err)
 	}

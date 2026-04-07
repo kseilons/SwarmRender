@@ -117,6 +117,7 @@ func (a *App) initHandlers() {
 
 	router := gin.Default()
 	router.Use(cors.Default())
+	router.Use(transport_http.AuthMiddleware())
 
 	// Register Groups
 	clusterHandler := transport_http.NewClusterHandler(a.useCases.Cluster)

@@ -32,9 +32,9 @@ func (_m *JobRepository) CreateJob(ctx context.Context, job domain.Job) error {
 	return r0
 }
 
-// GetJob provides a mock function with given fields: ctx, id
-func (_m *JobRepository) GetJob(ctx context.Context, id string) (domain.Job, error) {
-	ret := _m.Called(ctx, id)
+// GetJob provides a mock function with given fields: ctx, id, ownerID
+func (_m *JobRepository) GetJob(ctx context.Context, id string, ownerID string) (domain.Job, error) {
+	ret := _m.Called(ctx, id, ownerID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetJob")
@@ -42,17 +42,17 @@ func (_m *JobRepository) GetJob(ctx context.Context, id string) (domain.Job, err
 
 	var r0 domain.Job
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (domain.Job, error)); ok {
-		return rf(ctx, id)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (domain.Job, error)); ok {
+		return rf(ctx, id, ownerID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) domain.Job); ok {
-		r0 = rf(ctx, id)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) domain.Job); ok {
+		r0 = rf(ctx, id, ownerID)
 	} else {
 		r0 = ret.Get(0).(domain.Job)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, id)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, id, ownerID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -60,9 +60,9 @@ func (_m *JobRepository) GetJob(ctx context.Context, id string) (domain.Job, err
 	return r0, r1
 }
 
-// ListJobs provides a mock function with given fields: ctx
-func (_m *JobRepository) ListJobs(ctx context.Context) ([]domain.Job, error) {
-	ret := _m.Called(ctx)
+// ListJobs provides a mock function with given fields: ctx, ownerID
+func (_m *JobRepository) ListJobs(ctx context.Context, ownerID string) ([]domain.Job, error) {
+	ret := _m.Called(ctx, ownerID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListJobs")
@@ -70,19 +70,19 @@ func (_m *JobRepository) ListJobs(ctx context.Context) ([]domain.Job, error) {
 
 	var r0 []domain.Job
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) ([]domain.Job, error)); ok {
-		return rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, string) ([]domain.Job, error)); ok {
+		return rf(ctx, ownerID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context) []domain.Job); ok {
-		r0 = rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, string) []domain.Job); ok {
+		r0 = rf(ctx, ownerID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]domain.Job)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, ownerID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -126,9 +126,27 @@ func (_m *JobRepository) UpdateJobPreview(ctx context.Context, id string, previe
 	return r0
 }
 
-// UpdateJobResult provides a mock function with given fields: ctx, id, status, resultPath
-func (_m *JobRepository) UpdateJobResult(ctx context.Context, id string, status domain.Status, resultPath *string) error {
-	ret := _m.Called(ctx, id, status, resultPath)
+// UpdateJobProgress provides a mock function with given fields: ctx, id, completedFrames
+func (_m *JobRepository) UpdateJobProgress(ctx context.Context, id string, completedFrames int) error {
+	ret := _m.Called(ctx, id, completedFrames)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateJobProgress")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, int) error); ok {
+		r0 = rf(ctx, id, completedFrames)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UpdateJobResult provides a mock function with given fields: ctx, id, status, resultURL
+func (_m *JobRepository) UpdateJobResult(ctx context.Context, id string, status domain.Status, resultURL *string) error {
+	ret := _m.Called(ctx, id, status, resultURL)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateJobResult")
@@ -136,7 +154,7 @@ func (_m *JobRepository) UpdateJobResult(ctx context.Context, id string, status 
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, domain.Status, *string) error); ok {
-		r0 = rf(ctx, id, status, resultPath)
+		r0 = rf(ctx, id, status, resultURL)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -155,24 +173,6 @@ func (_m *JobRepository) UpdateJobStatus(ctx context.Context, id string, status 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, domain.Status) error); ok {
 		r0 = rf(ctx, id, status)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// UpdateJobProgress provides a mock function with given fields: ctx, id, completedFrames
-func (_m *JobRepository) UpdateJobProgress(ctx context.Context, id string, completedFrames int) error {
-	ret := _m.Called(ctx, id, completedFrames)
-
-	if len(ret) == 0 {
-		panic("no return value specified for UpdateJobProgress")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, int) error); ok {
-		r0 = rf(ctx, id, completedFrames)
 	} else {
 		r0 = ret.Error(0)
 	}

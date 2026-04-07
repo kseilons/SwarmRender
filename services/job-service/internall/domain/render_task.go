@@ -16,6 +16,12 @@ const (
 	StatusStitching       Status = "STITCHING"
 )
 
+type AuthUser struct {
+	ID    string   `json:"id"`
+	Email string   `json:"email"`
+	Roles []string `json:"roles"`
+}
+
 type RenderOptions struct {
 	Engine       string `json:"engine"`
 	UseCPU       bool   `json:"use_cpu"`
@@ -60,6 +66,7 @@ type Job struct {
 	Options         RenderOptions `json:"options"`
 	PreviewURL      *string       `json:"preview_url,omitempty"`
 	CompletedFrames int           `json:"completed_frames"`
+	OwnerID         string        `json:"owner_id,omitempty"`
 	CreatedAt       time.Time     `json:"created_at"`
 	UpdatedAt       time.Time     `json:"updated_at"`
 }

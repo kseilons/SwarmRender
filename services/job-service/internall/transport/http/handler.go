@@ -12,11 +12,11 @@ import (
 )
 
 type JobUseCase interface {
-	CreateJob(ctx context.Context, req domain.CreateJobRequest, logger *slog.Logger) (domain.Job, error)
-	GetJob(ctx context.Context, id string) (domain.JobResponse, error)
-	ListJobs(ctx context.Context) ([]domain.Job, error)
+	CreateJob(ctx context.Context, req domain.CreateJobRequest, user domain.AuthUser, logger *slog.Logger) (domain.Job, error)
+	GetJob(ctx context.Context, id string, user domain.AuthUser) (domain.JobResponse, error)
+	ListJobs(ctx context.Context, user domain.AuthUser) ([]domain.Job, error)
 	GenerateUploadURL(ctx context.Context, filename string, projectID string) (string, string, error)
-	RetryJob(ctx context.Context, id string, logger *slog.Logger) error
+	RetryJob(ctx context.Context, id string, user domain.AuthUser, logger *slog.Logger) error
 }
 
 type Handler struct {
@@ -51,7 +51,13 @@ func (h *Handler) CreateJob(c *gin.Context) {
 	logger := slog.Default().With(slog.String("job_name", req.Name))
 	logger.Info("received job creation request")
 
-	job, err := h.useCase.CreateJob(c.Request.Context(), req, logger)
+	user, err := GetUser(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	job, err := h.useCase.CreateJob(c.Request.Context(), req, user, logger)
 	if err != nil {
 		logger.Error("failed to create job", slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -63,7 +69,13 @@ func (h *Handler) CreateJob(c *gin.Context) {
 
 func (h *Handler) GetJob(c *gin.Context) {
 	id := c.Param("id")
-	job, err := h.useCase.GetJob(c.Request.Context(), id)
+	user, err := GetUser(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	job, err := h.useCase.GetJob(c.Request.Context(), id, user)
 	if err != nil {
 		slog.Error("failed to get job", slog.String("job_id", id), slog.Any("error", err))
 		c.JSON(http.StatusNotFound, gin.H{"error": "job not found"})
@@ -73,7 +85,13 @@ func (h *Handler) GetJob(c *gin.Context) {
 }
 
 func (h *Handler) ListJobs(c *gin.Context) {
-	jobs, err := h.useCase.ListJobs(c.Request.Context())
+	user, err := GetUser(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	jobs, err := h.useCase.ListJobs(c.Request.Context(), user)
 	if err != nil {
 		slog.Error("failed to list jobs", slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -108,7 +126,13 @@ func (h *Handler) RetryJob(c *gin.Context) {
 	logger := slog.Default().With(slog.String("job_id", id))
 	logger.Info("received job retry request")
 
-	err := h.useCase.RetryJob(c.Request.Context(), id, logger)
+	user, err := GetUser(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = h.useCase.RetryJob(c.Request.Context(), id, user, logger)
 	if err != nil {
 		logger.Error("failed to retry job", slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

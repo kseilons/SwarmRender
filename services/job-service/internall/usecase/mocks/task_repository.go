@@ -185,9 +185,9 @@ func (_m *TaskRepository) UpdateTaskProgress(ctx context.Context, id string, cur
 	return r0, r1, r2
 }
 
-// UpdateTaskStatus provides a mock function with given fields: ctx, id, status, workerID, resultPath
-func (_m *TaskRepository) UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID *string, resultPath *string) (string, error) {
-	ret := _m.Called(ctx, id, status, workerID, resultPath)
+// UpdateTaskStatus provides a mock function with given fields: ctx, id, status, workerID, resultURL, logs
+func (_m *TaskRepository) UpdateTaskStatus(ctx context.Context, id string, status domain.Status, workerID *string, resultURL *string, logs *string) (string, error) {
+	ret := _m.Called(ctx, id, status, workerID, resultURL, logs)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateTaskStatus")
@@ -195,17 +195,17 @@ func (_m *TaskRepository) UpdateTaskStatus(ctx context.Context, id string, statu
 
 	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, domain.Status, *string, *string) (string, error)); ok {
-		return rf(ctx, id, status, workerID, resultPath)
+	if rf, ok := ret.Get(0).(func(context.Context, string, domain.Status, *string, *string, *string) (string, error)); ok {
+		return rf(ctx, id, status, workerID, resultURL, logs)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, domain.Status, *string, *string) string); ok {
-		r0 = rf(ctx, id, status, workerID, resultPath)
+	if rf, ok := ret.Get(0).(func(context.Context, string, domain.Status, *string, *string, *string) string); ok {
+		r0 = rf(ctx, id, status, workerID, resultURL, logs)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, domain.Status, *string, *string) error); ok {
-		r1 = rf(ctx, id, status, workerID, resultPath)
+	if rf, ok := ret.Get(1).(func(context.Context, string, domain.Status, *string, *string, *string) error); ok {
+		r1 = rf(ctx, id, status, workerID, resultURL, logs)
 	} else {
 		r1 = ret.Error(1)
 	}

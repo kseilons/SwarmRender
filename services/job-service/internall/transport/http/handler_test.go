@@ -22,6 +22,9 @@ func TestHandler_CreateJob(t *testing.T) {
 	handler := transport_http.NewHandler(mockUC, nil)
 
 	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("auth_user", domain.AuthUser{ID: "test-user"})
+	})
 	handler.Register(router)
 
 	reqBody := domain.CreateJobRequest{
@@ -32,7 +35,7 @@ func TestHandler_CreateJob(t *testing.T) {
 	body, _ := json.Marshal(reqBody)
 
 	t.Run("Success", func(t *testing.T) {
-		mockUC.On("CreateJob", mock.Anything, reqBody, mock.Anything).
+		mockUC.On("CreateJob", mock.Anything, reqBody, domain.AuthUser{ID: "test-user"}, mock.Anything).
 			Return(domain.Job{ID: "job-123", Name: "api-test-job"}, nil)
 
 		req, _ := http.NewRequest(http.MethodPost, "/jobs", bytes.NewBuffer(body))
@@ -63,10 +66,13 @@ func TestHandler_GetJob(t *testing.T) {
 	handler := transport_http.NewHandler(mockUC, nil)
 
 	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("auth_user", domain.AuthUser{ID: "test-user"})
+	})
 	handler.Register(router)
 
 	t.Run("Success", func(t *testing.T) {
-		mockUC.On("GetJob", mock.Anything, "job-123").
+		mockUC.On("GetJob", mock.Anything, "job-123", domain.AuthUser{ID: "test-user"}).
 			Return(domain.JobResponse{Job: domain.Job{ID: "job-123"}}, nil)
 
 		req, _ := http.NewRequest(http.MethodGet, "/jobs/job-123", nil)
@@ -81,7 +87,7 @@ func TestHandler_GetJob(t *testing.T) {
 	})
 
 	t.Run("NotFound", func(t *testing.T) {
-		mockUC.On("GetJob", mock.Anything, "missing").
+		mockUC.On("GetJob", mock.Anything, "missing", domain.AuthUser{ID: "test-user"}).
 			Return(domain.JobResponse{}, assert.AnError)
 
 		req, _ := http.NewRequest(http.MethodGet, "/jobs/missing", nil)
@@ -99,10 +105,13 @@ func TestHandler_ListJobs(t *testing.T) {
 	handler := transport_http.NewHandler(mockUC, nil)
 
 	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("auth_user", domain.AuthUser{ID: "test-user"})
+	})
 	handler.Register(router)
 
 	t.Run("Success", func(t *testing.T) {
-		mockUC.On("ListJobs", mock.Anything).
+		mockUC.On("ListJobs", mock.Anything, domain.AuthUser{ID: "test-user"}).
 			Return([]domain.Job{{ID: "1"}, {ID: "2"}}, nil).Once()
 
 		req, _ := http.NewRequest(http.MethodGet, "/jobs", nil)
@@ -117,7 +126,7 @@ func TestHandler_ListJobs(t *testing.T) {
 	})
 
 	t.Run("Error", func(t *testing.T) {
-		mockUC.On("ListJobs", mock.Anything).
+		mockUC.On("ListJobs", mock.Anything, domain.AuthUser{ID: "test-user"}).
 			Return(nil, assert.AnError).Once()
 
 		req, _ := http.NewRequest(http.MethodGet, "/jobs", nil)

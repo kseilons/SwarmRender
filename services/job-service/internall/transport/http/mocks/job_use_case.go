@@ -16,9 +16,9 @@ type JobUseCase struct {
 	mock.Mock
 }
 
-// CreateJob provides a mock function with given fields: ctx, req, logger
-func (_m *JobUseCase) CreateJob(ctx context.Context, req domain.CreateJobRequest, logger *slog.Logger) (domain.Job, error) {
-	ret := _m.Called(ctx, req, logger)
+// CreateJob provides a mock function with given fields: ctx, req, user, logger
+func (_m *JobUseCase) CreateJob(ctx context.Context, req domain.CreateJobRequest, user domain.AuthUser, logger *slog.Logger) (domain.Job, error) {
+	ret := _m.Called(ctx, req, user, logger)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateJob")
@@ -26,45 +26,17 @@ func (_m *JobUseCase) CreateJob(ctx context.Context, req domain.CreateJobRequest
 
 	var r0 domain.Job
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, domain.CreateJobRequest, *slog.Logger) (domain.Job, error)); ok {
-		return rf(ctx, req, logger)
+	if rf, ok := ret.Get(0).(func(context.Context, domain.CreateJobRequest, domain.AuthUser, *slog.Logger) (domain.Job, error)); ok {
+		return rf(ctx, req, user, logger)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, domain.CreateJobRequest, *slog.Logger) domain.Job); ok {
-		r0 = rf(ctx, req, logger)
+	if rf, ok := ret.Get(0).(func(context.Context, domain.CreateJobRequest, domain.AuthUser, *slog.Logger) domain.Job); ok {
+		r0 = rf(ctx, req, user, logger)
 	} else {
 		r0 = ret.Get(0).(domain.Job)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, domain.CreateJobRequest, *slog.Logger) error); ok {
-		r1 = rf(ctx, req, logger)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GetJob provides a mock function with given fields: ctx, id
-func (_m *JobUseCase) GetJob(ctx context.Context, id string) (domain.JobResponse, error) {
-	ret := _m.Called(ctx, id)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetJob")
-	}
-
-	var r0 domain.JobResponse
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (domain.JobResponse, error)); ok {
-		return rf(ctx, id)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) domain.JobResponse); ok {
-		r0 = rf(ctx, id)
-	} else {
-		r0 = ret.Get(0).(domain.JobResponse)
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, id)
+	if rf, ok := ret.Get(1).(func(context.Context, domain.CreateJobRequest, domain.AuthUser, *slog.Logger) error); ok {
+		r1 = rf(ctx, req, user, logger)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -107,29 +79,27 @@ func (_m *JobUseCase) GenerateUploadURL(ctx context.Context, filename string, pr
 	return r0, r1, r2
 }
 
-// ListJobs provides a mock function with given fields: ctx
-func (_m *JobUseCase) ListJobs(ctx context.Context) ([]domain.Job, error) {
-	ret := _m.Called(ctx)
+// GetJob provides a mock function with given fields: ctx, id, user
+func (_m *JobUseCase) GetJob(ctx context.Context, id string, user domain.AuthUser) (domain.JobResponse, error) {
+	ret := _m.Called(ctx, id, user)
 
 	if len(ret) == 0 {
-		panic("no return value specified for ListJobs")
+		panic("no return value specified for GetJob")
 	}
 
-	var r0 []domain.Job
+	var r0 domain.JobResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) ([]domain.Job, error)); ok {
-		return rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, string, domain.AuthUser) (domain.JobResponse, error)); ok {
+		return rf(ctx, id, user)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context) []domain.Job); ok {
-		r0 = rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, string, domain.AuthUser) domain.JobResponse); ok {
+		r0 = rf(ctx, id, user)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]domain.Job)
-		}
+		r0 = ret.Get(0).(domain.JobResponse)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
+	if rf, ok := ret.Get(1).(func(context.Context, string, domain.AuthUser) error); ok {
+		r1 = rf(ctx, id, user)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -137,17 +107,47 @@ func (_m *JobUseCase) ListJobs(ctx context.Context) ([]domain.Job, error) {
 	return r0, r1
 }
 
-// RetryJob provides a mock function with given fields: ctx, id, logger
-func (_m *JobUseCase) RetryJob(ctx context.Context, id string, logger *slog.Logger) error {
-	ret := _m.Called(ctx, id, logger)
+// ListJobs provides a mock function with given fields: ctx, user
+func (_m *JobUseCase) ListJobs(ctx context.Context, user domain.AuthUser) ([]domain.Job, error) {
+	ret := _m.Called(ctx, user)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListJobs")
+	}
+
+	var r0 []domain.Job
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, domain.AuthUser) ([]domain.Job, error)); ok {
+		return rf(ctx, user)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, domain.AuthUser) []domain.Job); ok {
+		r0 = rf(ctx, user)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]domain.Job)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, domain.AuthUser) error); ok {
+		r1 = rf(ctx, user)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// RetryJob provides a mock function with given fields: ctx, id, user, logger
+func (_m *JobUseCase) RetryJob(ctx context.Context, id string, user domain.AuthUser, logger *slog.Logger) error {
+	ret := _m.Called(ctx, id, user, logger)
 
 	if len(ret) == 0 {
 		panic("no return value specified for RetryJob")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, *slog.Logger) error); ok {
-		r0 = rf(ctx, id, logger)
+	if rf, ok := ret.Get(0).(func(context.Context, string, domain.AuthUser, *slog.Logger) error); ok {
+		r0 = rf(ctx, id, user, logger)
 	} else {
 		r0 = ret.Error(0)
 	}
