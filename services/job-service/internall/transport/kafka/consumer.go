@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"strings"
 
 	"github.com/segmentio/kafka-go"
 	"kseilons/job-service/internall/domain"
@@ -76,35 +77,26 @@ func (c *Consumer) Run(ctx context.Context) error {
 			continue
 		}
 
-		if result.Status == domain.StatusFailed {
-			c.logger.Warn("task failed",
-				slog.String("task_id", result.TaskID),
-				slog.String("error", result.Error),
-			)
-
+		switch result.Type {
+		case domain.TypeMetadata:
 			jobID := result.ProjectID
-			if jobID == "" && len(result.TaskID) > 5 {
+			if strings.HasPrefix(result.TaskID, "meta-") {
+				jobID = strings.TrimPrefix(result.TaskID, "meta-")
+			} else if jobID == "" && len(result.TaskID) > 5 {
 				jobID = result.TaskID[5:]
 			}
 
-			if err := c.useCase.UpdateJobStatus(ctx, jobID, domain.StatusFailed, c.logger); err != nil {
-				c.logger.Error("failed to mark job as failed", slog.Any("error", err))
-			}
-			continue
-		}
-
-		switch result.Type {
-		case domain.TypeMetadata:
 			if result.Metadata == nil {
 				c.logger.Error("metadata result missing metadata field", slog.String("task_id", result.TaskID))
 				continue
 			}
-			jobID := result.ProjectID
-			if jobID == "" && len(result.TaskID) > 5 {
-				jobID = result.TaskID[5:]
-			}
+
 			if err := c.useCase.HandleMetadataResult(ctx, jobID, result.Metadata.FrameStart, result.Metadata.FrameEnd, c.logger); err != nil {
-				c.logger.Error("failed to handle metadata result", slog.Any("error", err))
+				c.logger.Error("failed to handle metadata result",
+					slog.String("task_id", result.TaskID),
+					slog.String("job_id", jobID),
+					logger.Err(err),
+				)
 			}
 
 		case domain.TypeStitching:
