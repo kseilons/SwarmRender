@@ -138,6 +138,11 @@ services:
       - KEYCLOAK_ADMIN_PASSWORD=admin
     ports:
       - "8083:8080"
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     depends_on:
       postgres:
         condition: service_healthy
