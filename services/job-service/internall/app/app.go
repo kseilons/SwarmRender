@@ -116,6 +116,9 @@ func (a *App) initHandlers() {
 	}
 
 	router := gin.Default()
+	router.GET("/health", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
 	router.Use(cors.Default())
 	router.Use(transport_http.AuthMiddleware())
 

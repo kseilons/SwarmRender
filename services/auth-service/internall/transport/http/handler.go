@@ -29,12 +29,18 @@ func NewHandler(useCase AuthUseCase, log *slog.Logger) *Handler {
 }
 
 func (h *Handler) Register(r *gin.Engine) {
+	r.GET("/health", h.Health)
+
 	auth := r.Group("/auth")
 	{
 		auth.POST("/login", h.Login)
 		auth.POST("/register", h.RegisterUser)
 		auth.POST("/refresh", h.Refresh)
 	}
+}
+
+func (h *Handler) Health(c *gin.Context) {
+	c.Status(http.StatusOK)
 }
 
 func (h *Handler) Login(c *gin.Context) {
