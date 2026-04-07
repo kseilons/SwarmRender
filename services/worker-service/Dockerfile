@@ -34,7 +34,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxext6 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN curl -L https://download.blender.org/release/Blender4.2/blender-4.2.0-linux-x64.tar.xz -o blender.tar.xz \
+RUN curl -L https://download.blender.org/release/Blender5.0/blender-5.0.1-linux-x64.tar.xz -o blender.tar.xz \
     && mkdir -p /opt/blender \
     && tar -xvf blender.tar.xz -C /opt/blender --strip-components=1 \
     && rm blender.tar.xz
