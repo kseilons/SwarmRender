@@ -28,20 +28,36 @@ func NewAuthMiddleware(logger *slog.Logger, jwksURL string) *AuthMiddleware {
 func (m *AuthMiddleware) Authenticate() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			m.logger.Warn("missing authorization header")
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is required"})
-			return
+		tokenString := ""
+
+		if authHeader != "" {
+			parts := strings.Split(authHeader, " ")
+			if len(parts) == 2 && parts[0] == "Bearer" {
+				tokenString = parts[1]
+			}
 		}
 
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			m.logger.Warn("invalid authorization header format")
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header must be Bearer <token>"})
-			return
+		// Fallback to Sec-WebSocket-Protocol for WebSockets
+		if tokenString == "" {
+			wsProtocol := c.GetHeader("Sec-WebSocket-Protocol")
+			if wsProtocol != "" {
+				// Protocol might be: "access_token, eyJhbG..."
+				parts := strings.Split(wsProtocol, ",")
+				for i, p := range parts {
+					p = strings.TrimSpace(p)
+					if p == "access_token" && i+1 < len(parts) {
+						tokenString = strings.TrimSpace(parts[i+1])
+						break
+					}
+				}
+			}
 		}
 
-		tokenString := parts[1]
+		if tokenString == "" {
+			m.logger.Warn("missing authorization or websocket protocol")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization required"})
+			return
+		}
 
 		keySet, err := jwk.Fetch(c.Request.Context(), m.jwksURL)
 		if err != nil {
