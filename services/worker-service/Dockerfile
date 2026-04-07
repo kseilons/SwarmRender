@@ -9,7 +9,7 @@ COPY . .
 
 RUN CGO_ENABLED=0 go build -o worker-service ./cmd/app/main.go
 
-FROM nvidia/cuda:13.2.0-cudnn-runtime-ubuntu24.04
+FROM nvidia/cuda:12.4.0-runtime-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -24,11 +24,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libfontconfig1 \
     libxcursor1 \
     libxinerama1 \
-    libgl1-mesa-glx \
+    libgl1 \
+    libegl1 \
+    libxfixes3 \
+    libxkbcommon0 \
     libglu1-mesa \
     libsm6 \
+    libice6 \
     libxext6 \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN curl -L https://download.blender.org/release/Blender4.2/blender-4.2.0-linux-x64.tar.xz -o blender.tar.xz \
     && mkdir -p /opt/blender \
