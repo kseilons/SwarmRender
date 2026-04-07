@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:8081';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081';
 
 export interface RenderOptions {
   engine: string;
@@ -75,6 +75,22 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+});
+
+// Add a request interceptor to inject the JWT token
+api.interceptors.request.use((config) => {
+  // oidc-client-ts stores tokens in session storage by default if configured
+  const oidcStorage = sessionStorage.getItem(`oidc.user:${import.meta.env.VITE_AUTH_AUTHORITY || "http://localhost:8083/realms/render-farm"}:${import.meta.env.VITE_AUTH_CLIENT_ID || "render-farm-frontend"}`);
+
+  if (oidcStorage) {
+    const user = JSON.parse(oidcStorage);
+    if (user.access_token) {
+      config.headers.Authorization = `Bearer ${user.access_token}`;
+    }
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
 });
 
 export const jobService = {
