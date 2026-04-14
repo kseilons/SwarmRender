@@ -20,7 +20,8 @@
       "retry_job": "Перезапустить",
       "node_active": "Узел активен",
       "start": "Начало",
-      "end": "Конец"
+      "end": "Конец",
+      "close": "Закрыть"
     },
     "jobs_page": {
       "title": "Дашборд рендеринга",
@@ -111,7 +112,8 @@
       "retry_job": "Retry",
       "node_active": "Node active",
       "start": "Start",
-      "end": "End"
+      "end": "End",
+      "close": "Close"
     },
     "jobs_page": {
       "title": "Render Dashboard",
