@@ -143,6 +143,13 @@ func (h *Handler) RetryJob(c *gin.Context) {
 }
 
 func (h *Handler) HandleWS(c *gin.Context) {
+	user, err := GetUser(c)
+	if err != nil {
+		slog.Error("ws connection unauthorized", slog.Any("error", err))
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
 	upgrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -157,7 +164,12 @@ func (h *Handler) HandleWS(c *gin.Context) {
 		return
 	}
 
-	client := &usecase.Client{Hub: h.hub, Conn: conn, Send: make(chan []byte, 256)}
+	client := &usecase.Client{
+		Hub:    h.hub,
+		Conn:   conn,
+		Send:   make(chan []byte, 256),
+		UserID: user.ID,
+	}
 	h.hub.RegisterClient(client)
 
 	go client.WritePump()

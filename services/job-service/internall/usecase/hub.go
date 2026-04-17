@@ -9,14 +9,20 @@ import (
 )
 
 type Client struct {
-	Hub  *Hub
-	Conn *websocket.Conn
-	Send chan []byte
+	Hub    *Hub
+	Conn   *websocket.Conn
+	Send   chan []byte
+	UserID string
+}
+
+type Message struct {
+	UserID string
+	Data   []byte
 }
 
 type Hub struct {
 	clients    map[*Client]bool
-	broadcast  chan []byte
+	broadcast  chan Message
 	register   chan *Client
 	unregister chan *Client
 	mu         sync.Mutex
@@ -24,7 +30,7 @@ type Hub struct {
 
 func NewHub() *Hub {
 	return &Hub{
-		broadcast:  make(chan []byte),
+		broadcast:  make(chan Message),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		clients:    make(map[*Client]bool),
@@ -50,8 +56,12 @@ func (h *Hub) Run() {
 		case message := <-h.broadcast:
 			h.mu.Lock()
 			for client := range h.clients {
+				// Only send to the specific user
+				if client.UserID != message.UserID {
+					continue
+				}
 				select {
-				case client.Send <- message:
+				case client.Send <- message.Data:
 				default:
 					close(client.Send)
 					delete(h.clients, client)
@@ -62,13 +72,16 @@ func (h *Hub) Run() {
 	}
 }
 
-func (h *Hub) BroadcastStatusUpdate(update any) {
+func (h *Hub) BroadcastStatusUpdate(userID string, update any) {
 	data, err := json.Marshal(update)
 	if err != nil {
 		slog.Error("failed to marshal ws update", slog.Any("error", err))
 		return
 	}
-	h.broadcast <- data
+	h.broadcast <- Message{
+		UserID: userID,
+		Data:   data,
+	}
 }
 
 func (h *Hub) RegisterClient(c *Client) {

@@ -241,11 +241,14 @@ func (uc *JobUseCase) HandleTaskResult(ctx context.Context, result domain.Render
 	}
 
 	if uc.hub != nil {
-		uc.hub.BroadcastStatusUpdate(map[string]any{
-			"type":    "task_update",
-			"task_id": result.TaskID,
-			"status":  result.Status,
-		})
+		job, err := uc.jobRepo.GetJob(ctx, jobID, "")
+		if err == nil {
+			uc.hub.BroadcastStatusUpdate(job.OwnerID, map[string]any{
+				"type":    "task_update",
+				"task_id": result.TaskID,
+				"status":  result.Status,
+			})
+		}
 	}
 
 	// Check job status
@@ -356,12 +359,15 @@ func (uc *JobUseCase) HandleTaskProgress(ctx context.Context, taskID string, cur
 	}
 
 	if uc.hub != nil {
-		uc.hub.BroadcastStatusUpdate(map[string]any{
-			"type":          "task_progress",
-			"task_id":       taskID,
-			"status":        status,
-			"current_frame": currentFrame,
-		})
+		job, err := uc.jobRepo.GetJob(ctx, jobID, "")
+		if err == nil {
+			uc.hub.BroadcastStatusUpdate(job.OwnerID, map[string]any{
+				"type":          "task_progress",
+				"task_id":       taskID,
+				"status":        status,
+				"current_frame": currentFrame,
+			})
+		}
 	}
 
 	// Calculate and update job progress
@@ -378,11 +384,14 @@ func (uc *JobUseCase) HandleTaskProgress(ctx context.Context, taskID string, cur
 		_ = uc.jobRepo.UpdateJobProgress(ctx, jobID, totalCompleted)
 
 		if uc.hub != nil {
-			uc.hub.BroadcastStatusUpdate(map[string]any{
-				"type":             "job_progress",
-				"job_id":           jobID,
-				"completed_frames": totalCompleted,
-			})
+			job, err := uc.jobRepo.GetJob(ctx, jobID, "")
+			if err == nil {
+				uc.hub.BroadcastStatusUpdate(job.OwnerID, map[string]any{
+					"type":             "job_progress",
+					"job_id":           jobID,
+					"completed_frames": totalCompleted,
+				})
+			}
 		}
 	}
 
@@ -402,11 +411,14 @@ func (uc *JobUseCase) HandleStitchingResult(ctx context.Context, result domain.R
 	}
 
 	if uc.hub != nil {
-		uc.hub.BroadcastStatusUpdate(map[string]any{
-			"type":    "task_update",
-			"task_id": result.TaskID,
-			"status":  result.Status,
-		})
+		job, err := uc.jobRepo.GetJob(ctx, jobID, "")
+		if err == nil {
+			uc.hub.BroadcastStatusUpdate(job.OwnerID, map[string]any{
+				"type":    "task_update",
+				"task_id": result.TaskID,
+				"status":  result.Status,
+			})
+		}
 	}
 
 	if jobID == "" {
@@ -415,12 +427,15 @@ func (uc *JobUseCase) HandleStitchingResult(ctx context.Context, result domain.R
 
 	err = uc.jobRepo.UpdateJobResult(ctx, jobID, result.Status, result.ResultURL)
 	if err == nil && uc.hub != nil {
-		uc.hub.BroadcastStatusUpdate(map[string]any{
-			"type":       "job_update",
-			"job_id":     jobID,
-			"status":     result.Status,
-			"result_url": result.ResultURL,
-		})
+		job, err := uc.jobRepo.GetJob(ctx, jobID, "")
+		if err == nil {
+			uc.hub.BroadcastStatusUpdate(job.OwnerID, map[string]any{
+				"type":       "job_update",
+				"job_id":     jobID,
+				"status":     result.Status,
+				"result_url": result.ResultURL,
+			})
+		}
 	}
 	return err
 }
@@ -440,11 +455,14 @@ func (uc *JobUseCase) UpdateJobStatus(ctx context.Context, id string, status dom
 	}
 
 	if uc.hub != nil {
-		uc.hub.BroadcastStatusUpdate(map[string]any{
-			"type":   "job_update",
-			"job_id": id,
-			"status": status,
-		})
+		job, err := uc.jobRepo.GetJob(ctx, id, "")
+		if err == nil {
+			uc.hub.BroadcastStatusUpdate(job.OwnerID, map[string]any{
+				"type":   "job_update",
+				"job_id": id,
+				"status": status,
+			})
+		}
 	}
 	return nil
 }
