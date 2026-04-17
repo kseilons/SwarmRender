@@ -1,4 +1,5 @@
 type WSMessageType = 'job_update' | 'task_update' | 'job_progress' | 'task_progress';
+import { getAccessToken } from './auth';
 
 interface WSMessage {
   type: WSMessageType;
@@ -21,9 +22,16 @@ class WebSocketService {
     this.connect();
   }
 
-  private connect() {
+  private async connect() {
     console.log('Connecting to WebSocket...');
-    this.socket = new WebSocket(this.url);
+    
+    const token = await getAccessToken();
+    let connectionUrl = this.url;
+    if (token) {
+      connectionUrl += `?token=${token}`;
+    }
+
+    this.socket = new WebSocket(connectionUrl);
 
     this.socket.onopen = () => {
       console.log('WebSocket connected');

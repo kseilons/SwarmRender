@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getAccessToken } from './auth';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081';
 
@@ -78,15 +79,10 @@ const api = axios.create({
 });
 
 // Add a request interceptor to inject the JWT token
-api.interceptors.request.use((config) => {
-  // oidc-client-ts stores tokens in session storage by default if configured
-  const oidcStorage = sessionStorage.getItem(`oidc.user:${import.meta.env.VITE_AUTH_AUTHORITY || "http://localhost:8083/realms/render-farm"}:${import.meta.env.VITE_AUTH_CLIENT_ID || "render-farm-frontend"}`);
-
-  if (oidcStorage) {
-    const user = JSON.parse(oidcStorage);
-    if (user.access_token) {
-      config.headers.Authorization = `Bearer ${user.access_token}`;
-    }
+api.interceptors.request.use(async (config) => {
+  const token = await getAccessToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 }, (error) => {
