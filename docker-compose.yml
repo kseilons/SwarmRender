@@ -101,7 +101,7 @@ services:
           devices:
             - driver: nvidia
               count: 1
-              capabilities: [gpu]
+              capabilities: [gpu, utility, graphics, compute]
     depends_on:
       kafka:
         condition: service_healthy
