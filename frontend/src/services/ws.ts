@@ -14,7 +14,7 @@ type MessageHandler = (msg: WSMessage) => void;
 
 class WebSocketService {
   private socket: WebSocket | null = null;
-  private url: string = 'ws://localhost:8081/ws';
+  private url: string = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws';
   private handlers: Set<MessageHandler> = new Set();
   private reconnectTimeout: number = 5000;
 
@@ -23,18 +23,21 @@ class WebSocketService {
   }
 
   private async connect() {
-    console.log('Connecting to WebSocket...');
+    console.log('Connecting to WebSocket via Gateway...');
     
-    const token = await getAccessToken();
-    let connectionUrl = this.url;
-    if (token) {
-      connectionUrl += `?token=${token}`;
-    }
+    this.socket = new WebSocket(this.url);
 
-    this.socket = new WebSocket(connectionUrl);
-
-    this.socket.onopen = () => {
-      console.log('WebSocket connected');
+    this.socket.onopen = async () => {
+      console.log('WebSocket connected. Sending auth message...');
+      const token = await getAccessToken();
+      if (token) {
+        this.socket?.send(JSON.stringify({
+          type: 'auth',
+          token: token
+        }));
+      } else {
+        console.warn('No access token available for WebSocket auth');
+      }
     };
 
     this.socket.onmessage = (event) => {

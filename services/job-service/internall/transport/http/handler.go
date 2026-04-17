@@ -7,7 +7,10 @@ import (
 	"log/slog"
 	"net/http"
 
+	"time"
+
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/websocket"
 )
 
@@ -31,12 +34,15 @@ func NewHandler(useCase JobUseCase, hub *usecase.Hub) *Handler {
 	}
 }
 
-func (h *Handler) Register(r *gin.Engine) {
+func (h *Handler) Register(r gin.IRouter) {
 	r.POST("/jobs", h.CreateJob)
 	r.GET("/jobs", h.ListJobs)
 	r.GET("/jobs/:id", h.GetJob)
 	r.POST("/jobs/:id/retry", h.RetryJob)
 	r.GET("/jobs/upload-url", h.GenerateUploadURL)
+}
+
+func (h *Handler) RegisterWS(r gin.IRouter) {
 	r.GET("/ws", h.HandleWS)
 }
 
@@ -143,13 +149,6 @@ func (h *Handler) RetryJob(c *gin.Context) {
 }
 
 func (h *Handler) HandleWS(c *gin.Context) {
-	user, err := GetUser(c)
-	if err != nil {
-		slog.Error("ws connection unauthorized", slog.Any("error", err))
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-
 	upgrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -164,14 +163,65 @@ func (h *Handler) HandleWS(c *gin.Context) {
 		return
 	}
 
+	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+
+	var authMsg struct {
+		Type  string `json:"type"`
+		Token string `json:"token"`
+	}
+
+	if err := conn.ReadJSON(&authMsg); err != nil {
+		slog.Warn("ws auth failed: failed to read first message", slog.Any("error", err))
+		conn.WriteJSON(gin.H{"type": "error", "payload": "authentication timed out or failed"})
+		conn.Close()
+		return
+	}
+
+	if authMsg.Type != "auth" || authMsg.Token == "" {
+		slog.Warn("ws auth failed: invalid message type or empty token")
+		conn.WriteJSON(gin.H{"type": "error", "payload": "invalid authentication message"})
+		conn.Close()
+		return
+	}
+
+	token, _, err := new(jwt.Parser).ParseUnverified(authMsg.Token, jwt.MapClaims{})
+	if err != nil {
+		slog.Warn("ws auth failed: invalid token format", slog.Any("error", err))
+		conn.WriteJSON(gin.H{"type": "error", "payload": "invalid token"})
+		conn.Close()
+		return
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		slog.Warn("ws auth failed: invalid token claims")
+		conn.WriteJSON(gin.H{"type": "error", "payload": "invalid token claims"})
+		conn.Close()
+		return
+	}
+
+	userID, ok := claims["sub"].(string)
+	if !ok || userID == "" {
+		slog.Warn("ws auth failed: subject claim missing")
+		conn.WriteJSON(gin.H{"type": "error", "payload": "invalid user identity"})
+		conn.Close()
+		return
+	}
+
+	// 3. Authentication successful
+	// Reset the read deadline for normal operations
+	conn.SetReadDeadline(time.Time{})
+
 	client := &usecase.Client{
 		Hub:    h.hub,
 		Conn:   conn,
 		Send:   make(chan []byte, 256),
-		UserID: user.ID,
+		UserID: userID,
 	}
 	h.hub.RegisterClient(client)
 
 	go client.WritePump()
 	go client.ReadPump()
+
+	slog.Info("ws client authenticated and registered", slog.String("user_id", userID))
 }

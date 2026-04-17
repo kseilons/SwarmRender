@@ -49,13 +49,17 @@ func main() {
 	}
 
 	rJobs := router.Group("/")
-	rJobs.Use(authMiddleware.Authenticate())
 	{
-		// Handle both /jobs and /jobs/xxx explicitly
-		rJobs.Any("/jobs", proxyHandler.ProxyJob())
-		rJobs.Any("/jobs/*path", proxyHandler.ProxyJob())
-		rJobs.Any("/stats", proxyHandler.ProxyJob())
-		rJobs.Any("/ws/*path", proxyHandler.ProxyJob())
+		router.Any("/ws", proxyHandler.ProxyJob())
+		router.Any("/ws/*path", proxyHandler.ProxyJob())
+
+		rJobsAuthenticated := rJobs.Group("/")
+		rJobsAuthenticated.Use(authMiddleware.Authenticate())
+		{
+			rJobsAuthenticated.Any("/jobs", proxyHandler.ProxyJob())
+			rJobsAuthenticated.Any("/jobs/*path", proxyHandler.ProxyJob())
+			rJobsAuthenticated.Any("/stats", proxyHandler.ProxyJob())
+		}
 	}
 
 	serverAddr := fmt.Sprintf(":%d", cfg.HTTP.Port)

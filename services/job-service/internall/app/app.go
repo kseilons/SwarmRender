@@ -118,14 +118,20 @@ func (a *App) initHandlers() {
 	router.GET("/health", func(c *gin.Context) {
 		c.Status(http.StatusOK)
 	})
-	router.Use(transport_http.AuthMiddleware())
 
-	// Register Groups
-	clusterHandler := transport_http.NewClusterHandler(a.useCases.Cluster)
-	clusterHandler.Register(router)
-
+	// Инициализируем хендлеры
 	jobHandler := transport_http.NewHandler(a.useCases.Job, a.infra.Hub)
-	jobHandler.Register(router)
+	clusterHandler := transport_http.NewClusterHandler(a.useCases.Cluster)
+
+	// Публичные маршруты (WebSocket)
+	jobHandler.RegisterWS(router)
+
+	// Маршруты с аутентификацией
+	authGroup := router.Group("/")
+	authGroup.Use(transport_http.AuthMiddleware())
+
+	clusterHandler.Register(authGroup)
+	jobHandler.Register(authGroup)
 
 	a.router = router
 	a.httpSrv = &http.Server{

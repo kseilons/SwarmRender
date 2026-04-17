@@ -17,24 +17,18 @@ const (
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
-		tokenString := ""
-
-		if authHeader != "" {
-			parts := strings.Split(authHeader, " ")
-			if len(parts) == 2 && parts[0] == "Bearer" {
-				tokenString = parts[1]
-			}
-		}
-
-		// Support token in query parameter (for WebSockets)
-		if tokenString == "" {
-			tokenString = c.Query("token")
-		}
-
-		if tokenString == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization token is required"})
+		if authHeader == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is required"})
 			return
 		}
+
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header must be Bearer <token>"})
+			return
+		}
+
+		tokenString := parts[1]
 
 		// Parse token without verification (we trust the gateway)
 		token, _, err := new(jwt.Parser).ParseUnverified(tokenString, jwt.MapClaims{})
@@ -54,7 +48,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			Email: getStringClaim(claims, "email"),
 		}
 
-		// Extract roles if present (Keycloak usually puts them in realm_access.roles)
+		// Extract roles if present
 		if realmAccess, ok := claims["realm_access"].(map[string]interface{}); ok {
 			if roles, ok := realmAccess["roles"].([]interface{}); ok {
 				for _, r := range roles {

@@ -21,7 +21,7 @@ func NewClusterHandler(uc ClusterUseCase) *ClusterHandler {
 	}
 }
 
-func (h *ClusterHandler) Register(r *gin.Engine) {
+func (h *ClusterHandler) Register(r gin.IRouter) {
 	r.GET("/stats", h.GetStats)
 }
 
