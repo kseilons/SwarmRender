@@ -9,6 +9,7 @@ import (
 
 	"kseilons/job-service/internall/config"
 	"kseilons/job-service/internall/domain"
+	"kseilons/job-service/pkg/metrics"
 
 	"github.com/google/uuid"
 )
@@ -87,6 +88,8 @@ func (uc *JobUseCase) CreateJob(ctx context.Context, req domain.CreateJobRequest
 
 	logger = logger.With(job.LogAttrs()...)
 	logger.Info("creating new job")
+
+	metrics.JobsCreated.Inc()
 
 	if err := uc.jobRepo.CreateJob(ctx, job); err != nil {
 		logger.Error("failed to create job in repo", slog.Any("error", err))
