@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"kseilons/worker-service/internall/domain"
+	"kseilons/worker-service/pkg/metrics"
 
 	"github.com/fsnotify/fsnotify"
 )
@@ -58,6 +59,9 @@ func (uc *RenderUseCase) Execute(ctx context.Context, logger *slog.Logger, task 
 		logger.Error("policy validation failed", slog.Any("error", err))
 		return nil, err
 	}
+
+	metrics.ActiveJobs.Inc()
+	defer metrics.ActiveJobs.Dec()
 
 	tempDir, err := os.MkdirTemp("", fmt.Sprintf("render-%s-*", task.ProjectID))
 	if err != nil {
@@ -109,6 +113,7 @@ func (uc *RenderUseCase) Execute(ctx context.Context, logger *slog.Logger, task 
 								ext := strings.ToLower(filepath.Ext(entry.Name()))
 								if ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".exr" || ext == ".mp4" || ext == ".tga" || ext == ".bmp" {
 									count++
+									metrics.FramesRendered.Inc()
 								}
 							}
 						}
@@ -116,7 +121,7 @@ func (uc *RenderUseCase) Execute(ctx context.Context, logger *slog.Logger, task 
 						if count > 0 {
 							// Update progress based on actual files on disk
 							currentFrame = task.StartFrame + count - 1
-							
+
 							reportErr := uc.resultProducer.ReportResult(ctx, domain.RenderResult{
 								TaskID:       task.TaskID,
 								ProjectID:    task.ProjectID,
