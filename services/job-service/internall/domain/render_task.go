@@ -39,8 +39,9 @@ type CommonTask struct {
 }
 
 type BaseTask struct {
-	ProjectID string `json:"project_id"`
-	TaskID    string `json:"task_id"`
+	ProjectID string    `json:"project_id"`
+	TaskID    string    `json:"task_id"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type MetadataTask struct {

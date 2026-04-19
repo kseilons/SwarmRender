@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"kseilons/stitching-service/internall/domain"
+	"kseilons/stitching-service/pkg/metrics"
+	"time"
 )
 
 type ProjectRepository interface {
@@ -64,9 +66,26 @@ func (uc *StitchingUseCase) Execute(ctx context.Context, logger *slog.Logger, ta
 
 	// Run FFmpeg via Stitcher
 	logger.Info("starting stitching", slog.Int("frame_count", len(frames)))
+	stitchingStart := time.Now()
 	if err := uc.stitcher.Stitch(ctx, logger, tempDir, outputFile, frames); err != nil {
 		uc.reportError(ctx, logger, task, err)
 		return err
+	}
+	metrics.StitchingDuration.Observe(time.Since(stitchingStart).Seconds())
+
+	// Calculate compression ratio
+	var totalFramesSize int64
+	for _, f := range frames {
+		info, err := os.Stat(filepath.Join(tempDir, f))
+		if err == nil {
+			totalFramesSize += info.Size()
+		}
+	}
+	videoInfo, err := os.Stat(outputFile)
+	if err == nil && totalFramesSize > 0 {
+		ratio := float64(totalFramesSize) / float64(videoInfo.Size())
+		metrics.CompressionRatio.Observe(ratio)
+		logger.Info("compression ratio calculated", slog.Float64("ratio", ratio))
 	}
 
 	// Upload Result

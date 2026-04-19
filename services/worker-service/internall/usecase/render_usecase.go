@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"kseilons/worker-service/internall/domain"
 	"kseilons/worker-service/pkg/metrics"
@@ -60,6 +61,11 @@ func (uc *RenderUseCase) Execute(ctx context.Context, logger *slog.Logger, task 
 		return nil, err
 	}
 
+	// Calculate queue wait time
+	if !task.CreatedAt.IsZero() {
+		metrics.QueueWaitTime.Observe(time.Since(task.CreatedAt).Seconds())
+	}
+
 	metrics.ActiveJobs.Inc()
 	defer metrics.ActiveJobs.Dec()
 
@@ -69,9 +75,11 @@ func (uc *RenderUseCase) Execute(ctx context.Context, logger *slog.Logger, task 
 	}
 	defer os.RemoveAll(tempDir)
 
+	downloadStart := time.Now()
 	if err := uc.downloadProject(ctx, logger, task.ProjectID, tempDir); err != nil {
 		return nil, err
 	}
+	metrics.StageDuration.WithLabelValues("download").Observe(time.Since(downloadStart).Seconds())
 
 	blendPath := filepath.Join(tempDir, extractRelativePath(task.ProjectID, task.MainFileURL))
 	outputDir := filepath.Join(tempDir, "output")
@@ -142,17 +150,21 @@ func (uc *RenderUseCase) Execute(ctx context.Context, logger *slog.Logger, task 
 		}()
 	}
 
+	renderStart := time.Now()
 	renderOutput, err := uc.renderer.Render(ctx, logger, job)
 	close(done)
 	if err != nil {
 		uc.reportError(ctx, logger, task, err, renderOutput)
 		return renderOutput, err
 	}
+	metrics.StageDuration.WithLabelValues("render").Observe(time.Since(renderStart).Seconds())
 
+	uploadStart := time.Now()
 	if err := uc.uploadResults(ctx, logger, task.ProjectID, outputDir); err != nil {
 		uc.reportError(ctx, logger, task, err, renderOutput)
 		return renderOutput, err
 	}
+	metrics.StageDuration.WithLabelValues("upload").Observe(time.Since(uploadStart).Seconds())
 
 	err = uc.resultProducer.ReportResult(ctx, domain.RenderResult{
 		TaskID:    task.TaskID,

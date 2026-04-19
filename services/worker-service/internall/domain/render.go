@@ -1,6 +1,9 @@
 package domain
 
-import "log/slog"
+import (
+	"log/slog"
+	"time"
+)
 
 // EngineType defines the available render engines in Blender.
 type EngineType string
@@ -70,8 +73,9 @@ type CommonTask struct {
 
 // BaseTask contains common fields for all tasks sent over Kafka.
 type BaseTask struct {
-	ProjectID string `json:"project_id"`
-	TaskID    string `json:"task_id"`
+	ProjectID string    `json:"project_id"`
+	TaskID    string    `json:"task_id"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // MetadataTask contains parameters for a metadata extraction job.

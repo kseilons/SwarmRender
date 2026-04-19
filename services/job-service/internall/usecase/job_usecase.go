@@ -119,6 +119,7 @@ func (uc *JobUseCase) RequestMetadata(ctx context.Context, job domain.Job, logge
 		BaseTask: domain.BaseTask{
 			ProjectID: extractProjectID(job.MainFileURL),
 			TaskID:    fmt.Sprintf("meta-%s", job.ID),
+			CreatedAt: time.Now(),
 		},
 		MainFileURL: job.MainFileURL,
 	}
@@ -190,6 +191,7 @@ func (uc *JobUseCase) SplitJobIntoTasks(ctx context.Context, job domain.Job, log
 			BaseTask: domain.BaseTask{
 				ProjectID: extractProjectID(job.MainFileURL),
 				TaskID:    t.ID,
+				CreatedAt: time.Now(),
 			},
 			CommonTask: domain.CommonTask{
 				StartFrame: t.FrameStart,
@@ -327,6 +329,7 @@ func (uc *JobUseCase) StartStitching(ctx context.Context, job domain.Job, logger
 		BaseTask: domain.BaseTask{
 			ProjectID: extractProjectID(job.MainFileURL),
 			TaskID:    stitchingTaskID,
+			CreatedAt: time.Now(),
 		},
 		MainFileURL: job.MainFileURL,
 		FrameStart:  job.FrameStart,

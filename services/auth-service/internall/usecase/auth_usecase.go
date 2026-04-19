@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"kseilons/auth-service/internall/config"
 	"kseilons/auth-service/internall/domain"
+	"kseilons/auth-service/pkg/metrics"
 
 	"github.com/Nerzal/gocloak/v13"
 )
@@ -33,6 +34,7 @@ func NewAuthUseCase(client KeycloakClient, cfg config.KeycloakConfig) *AuthUseCa
 func (u *AuthUseCase) Login(ctx context.Context, username, password string) (*domain.TokenResponse, error) {
 	token, err := u.client.Login(ctx, u.cfg.ClientID, u.cfg.ClientSecret, u.cfg.Realm, username, password)
 	if err != nil {
+		metrics.AuthFailures.Inc()
 		return nil, fmt.Errorf("login failed: %w", err)
 	}
 
