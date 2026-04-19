@@ -93,15 +93,18 @@ services:
       context: ./services/worker-service
       dockerfile: Dockerfile
     container_name: worker-service
+    shm_size: 2gb
     environment:
       - CONFIG_PATH=config/config-dev.yaml
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - NVIDIA_VISIBLE_DEVICES=all
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
               count: 1
-              capabilities: [gpu, utility, graphics, compute]
+              capabilities: [compute, utility, graphics, display, video]
     depends_on:
       kafka:
         condition: service_healthy

@@ -9,7 +9,7 @@ COPY . .
 
 RUN CGO_ENABLED=0 go build -o worker-service ./cmd/app/main.go
 
-FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04
+FROM nvidia/cuda:13.2.1-cudnn-devel-ubuntu24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -32,15 +32,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsm6 \
     libice6 \
     libxext6 \
+    libglvnd0 \
+    libopengl0 \
+    libglx0 \
+    libgl1-mesa-dri \
+    libglx-mesa0 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 
 RUN curl -L https://download.blender.org/release/Blender5.0/blender-5.0.1-linux-x64.tar.xz -o blender.tar.xz \
     && mkdir -p /opt/blender \
     && tar -xvf blender.tar.xz -C /opt/blender --strip-components=1 \
     && rm blender.tar.xz
 ENV BLENDER_PATH=/opt/blender/blender
-ENV NVIDIA_VISIBLE_DEVICES=all
-ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics
 
 WORKDIR /app
 
