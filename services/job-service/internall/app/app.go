@@ -18,6 +18,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+	prometheus "github.com/zsais/go-gin-prometheus"
 )
 
 type Infrastructure struct {
@@ -115,6 +116,8 @@ func (a *App) initHandlers() {
 	}
 
 	router := gin.Default()
+	p := prometheus.NewPrometheus("job_service")
+	p.Use(router)
 	router.GET("/health", func(c *gin.Context) {
 		c.Status(http.StatusOK)
 	})

@@ -13,6 +13,10 @@ import (
 	"kseilons/worker-service/internall/transport/kafka"
 	"kseilons/worker-service/internall/usecase"
 	"kseilons/worker-service/pkg/logger"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	prometheus "github.com/zsais/go-gin-prometheus"
 )
 
 func main() {
@@ -48,6 +52,21 @@ func main() {
 	defer func() {
 		if err := consumer.Close(); err != nil {
 			log.Error("failed to close kafka consumer", logger.Err(err))
+		}
+	}()
+
+	// Start metrics and health server
+	go func() {
+		gin.SetMode(gin.ReleaseMode)
+		r := gin.Default()
+		p := prometheus.NewPrometheus("worker_service")
+		p.Use(r)
+		r.GET("/health", func(c *gin.Context) {
+			c.Status(http.StatusOK)
+		})
+		log.Info("metrics server starting", "address", ":8081")
+		if err := r.Run(":8081"); err != nil {
+			log.Error("metrics server failed", logger.Err(err))
 		}
 	}()
 

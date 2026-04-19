@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	prometheus "github.com/zsais/go-gin-prometheus"
 )
 
 func main() {
@@ -32,6 +33,8 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	router := gin.Default()
+	p := prometheus.NewPrometheus("api_gateway")
+	p.Use(router)
 	router.RedirectTrailingSlash = false
 	router.RedirectFixedPath = false
 

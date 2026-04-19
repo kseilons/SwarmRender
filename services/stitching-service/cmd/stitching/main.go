@@ -11,6 +11,10 @@ import (
 	"kseilons/stitching-service/internall/repository"
 	"kseilons/stitching-service/internall/transport/kafka"
 	"kseilons/stitching-service/internall/usecase"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	prometheus "github.com/zsais/go-gin-prometheus"
 )
 
 func main() {
@@ -57,6 +61,21 @@ func main() {
 		sig := <-sigChan
 		logger.Info("received signal, shutting down", slog.String("signal", sig.String()))
 		cancel()
+	}()
+
+	// Start metrics and health server
+	go func() {
+		gin.SetMode(gin.ReleaseMode)
+		r := gin.Default()
+		p := prometheus.NewPrometheus("stitching_service")
+		p.Use(r)
+		r.GET("/health", func(c *gin.Context) {
+			c.Status(http.StatusOK)
+		})
+		logger.Info("metrics server starting", slog.String("address", ":8081"))
+		if err := r.Run(":8081"); err != nil {
+			logger.Error("metrics server failed", slog.Any("error", err))
+		}
 	}()
 
 	// Start Consumer

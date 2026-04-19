@@ -13,6 +13,7 @@ import (
 
 	"github.com/Nerzal/gocloak/v13"
 	"github.com/gin-gonic/gin"
+	prometheus "github.com/zsais/go-gin-prometheus"
 )
 
 func main() {
@@ -30,6 +31,8 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	router := gin.Default()
+	p := prometheus.NewPrometheus("auth_service")
+	p.Use(router)
 
 	handler.Register(router)
 
