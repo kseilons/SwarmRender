@@ -305,7 +305,7 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
                         })}
                       >
                         <option value="CYCLES">CYCLES</option>
-                        <option value="EEVEE">EEVEE</option>
+                        <option value="EEVEE" disabled>EEVEE {t('create_modal.not_supported')}</option>
                       </select>
                     </div>
 
@@ -362,10 +362,10 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose }) => {
                         >
                           <option value="CPU">CPU</option>
                           <option value="CUDA">CUDA</option>
-                          <option value="OPTIX">OPTIX</option>
-                          <option value="HIP">HIP (AMD)</option>
-                          <option value="METAL">METAL (Apple)</option>
-                          <option value="ONEAPI">ONEAPI (Intel)</option>
+                          <option value="OPTIX" disabled>OPTIX {t('create_modal.not_supported')}</option>
+                          <option value="HIP" disabled>HIP {t('create_modal.not_supported')}</option>
+                          <option value="METAL" disabled>METAL {t('create_modal.not_supported')}</option>
+                          <option value="ONEAPI" disabled>ONEAPI {t('create_modal.not_supported')}</option>
                         </select>
                       </div>
                     )}
