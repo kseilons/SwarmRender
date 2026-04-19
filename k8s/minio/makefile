@@ -6,7 +6,10 @@ LICENSE = "eyJhbGciOiJFUzM4NCIsInR5cCI6IkpXVCJ9.eyJhaWQiOjAsImNhcCI6MCwiaWF0Ijox
 .PHONY: all install-operator install-store status clean
 
 # Установка всего сразу
-all: install-operator install-store status
+all: license install-operator install-store status
+
+license:
+	kubectl create secret generic aistor-license --from-literal=license=$(LICENSE) -n $(OPERATOR_NS) --dry-run=client -o yaml | kubectl apply -f -
 
 install-operator:
 	@echo "--- Installing AIStor Operator ---"

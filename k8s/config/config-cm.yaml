@@ -1,0 +1,87 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  job-service.yaml: |
+    env: "dev"
+    http:
+      address: "0.0.0.0:8081"
+      max_workers: 2
+    database:
+      host: "postgres"
+      port: 5432
+      user: "admin"
+      password: "admin"
+      name: "dev_db"
+      sslmode: "disable"
+    kafka:
+      brokers: ["kafka-kafka-bootstrap.kafka:9092"]
+      render_topic: "render-tasks"
+      metadata_topic: "metadata-tasks"
+      stitching_topic: "stitching-tasks"
+      result_topic: "render-results"
+      result_group_id: "job-service-results"
+    minio:
+      endpoint: "minio.object-store:9000"
+      access_key: "admin"
+      secret_key: "password"
+      use_ssl: false
+      bucket: "blender-renders"
+      presigned_expiry: 3600
+
+  auth-service.yaml: |
+    env: "dev"
+    http:
+      port: 8082
+    keycloak:
+      base_url: "http://keycloak.iam:8080"
+      realm: "render-farm"
+      client_id: "auth-service"
+      client_secret: "secret"
+
+  worker-service.yaml: |
+    env: "dev"
+    blender:
+      path: "/opt/blender/blender"
+      allowed_devices: ["CPU", "CUDA", "OPTIX"]
+      threads: 0
+    kafka:
+      brokers: ["kafka-kafka-bootstrap.kafka:9092"]
+      render_topic: "render-tasks"
+      metadata_topic: "metadata-tasks"
+      result_topic: "render-results"
+      group_id: "worker-service"
+    minio:
+      endpoint: "minio.object-store:9000"
+      access_key: "admin"
+      secret_key: "password"
+      use_ssl: false
+      bucket: "blender-renders"
+
+  stitching-service.yaml: |
+    env: "dev"
+    http:
+      address: "0.0.0.0:8082"
+    kafka:
+      brokers: ["kafka-kafka-bootstrap.kafka:9092"]
+      consumer_group: "stitching-group"
+      input_topic: "stitching-tasks"
+      result_topic: "render-results"
+    minio:
+      endpoint: "minio.object-store:9000"
+      access_key: "admin"
+      secret_key: "password"
+      bucket: "blender-renders"
+      use_ssl: false
+      output_bucket: "blender-renders"
+
+  api-gateway.yaml: |
+    env: "dev"
+    http:
+      port: 8000
+    services:
+      auth_service: "http://auth-service:8082"
+      job_service: "http://job-service:8081"
+    keycloak:
+      jwks_url: "http://keycloak.iam:8080/realms/render-farm/protocol/openid-connect/certs"
