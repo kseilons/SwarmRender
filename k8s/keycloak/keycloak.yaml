@@ -5,6 +5,63 @@ metadata:
 
 ---
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm-config
+  namespace: iam
+data:
+  realm-render-farm.json: |
+    {
+      "realm": "render-farm",
+      "enabled": true,
+      "registrationAllowed": true,
+      "resetPasswordAllowed": true,
+      "rememberMe": true,
+      "loginTheme": "swarmrender",
+      "clients": [
+        {
+          "clientId": "auth-service",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": false,
+          "secret": "${AUTH_SERVICE_CLIENT_SECRET:-secret}",
+          "serviceAccountsEnabled": true,
+          "redirectUris": ["*"]
+        },
+        {
+          "clientId": "render-farm-frontend",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": true,
+          "redirectUris": ["http://localhost:5173/*"],
+          "webOrigins": ["http://localhost:5173"],
+          "attributes": { "pkce.code.challenge.method": "S256" }
+        }
+      ],
+      "identityProviders": [
+        {
+          "alias": "yandex",
+          "providerId": "yandex",
+          "enabled": true,
+          "config": {
+            "clientId": "${YANDEX_CLIENT_ID}",
+            "clientSecret": "${YANDEX_CLIENT_SECRET}"
+          }
+        },
+        {
+          "alias": "vk",
+          "providerId": "vk",
+          "enabled": true,
+          "config": {
+            "clientId": "${VK_CLIENT_ID}",
+            "clientSecret": "${VK_CLIENT_SECRET}"
+          }
+        }
+      ]
+    }
+
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: keycloak
@@ -56,10 +113,27 @@ spec:
       labels:
         app: keycloak
     spec:
+      volumes:
+        - name: realm-config
+          configMap:
+            name: keycloak-realm-config
+        - name: providers
+          emptyDir: {}
+      initContainers:
+        - name: download-providers
+          image: busybox:latest
+          command:
+            - sh
+            - -c
+            - |
+              wget -O /opt/keycloak/providers/keycloak-russian-providers.jar https://repo1.maven.org/maven2/ru/playa/keycloak/keycloak-russian-providers/26.5.0.1/keycloak-russian-providers-26.5.0.1.jar
+          volumeMounts:
+            - name: providers
+              mountPath: /opt/keycloak/providers
       containers:
         - name: keycloak
           image: quay.io/keycloak/keycloak:26.5.6
-          args: ["start"]
+          args: ["start", "--import-realm"]
           env:
             - name: KC_BOOTSTRAP_ADMIN_USERNAME
               valueFrom:
@@ -113,6 +187,15 @@ spec:
                 secretKeyRef:
                   name: keycloak-kdb-user-pass
                   key: username
+            # Данные для провайдеров
+            - name: YANDEX_CLIENT_ID
+              value: "your-id"
+            - name: YANDEX_CLIENT_SECRET
+              value: "your-secret"
+            - name: VK_CLIENT_ID
+              value: "your-id"
+            - name: VK_CLIENT_SECRET
+              value: "your-secret"
           ports:
             - name: http
               containerPort: 8080
@@ -145,6 +228,12 @@ spec:
             requests:
               cpu: 500m
               memory: 1700Mi
+          volumeMounts:
+            - name: realm-config
+              mountPath: /opt/keycloak/data/import
+              readOnly: true
+            - name: providers
+              mountPath: /opt/keycloak/providers
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

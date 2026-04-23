@@ -127,7 +127,7 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     container_name: keycloak-dev
-    command: start-dev
+    command: start-dev --import-realm
     environment:
       - KC_DB=postgres
       - KC_DB_URL=jdbc:postgresql://postgres:5432/dev_db
@@ -135,6 +135,11 @@ services:
       - KC_DB_PASSWORD=admin
       - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=admin
+      # Переменные для подстановки в JSON
+      - YANDEX_CLIENT_ID=${YANDEX_CLIENT_ID:-your-yandex-id}
+      - YANDEX_CLIENT_SECRET=${YANDEX_CLIENT_SECRET:-your-yandex-secret}
+      - VK_CLIENT_ID=${VK_CLIENT_ID:-your-vk-id}
+      - VK_CLIENT_SECRET=${VK_CLIENT_SECRET:-your-vk-secret}
     ports:
       - "8083:8080"
     healthcheck:
@@ -147,6 +152,8 @@ services:
         condition: service_healthy
     volumes:
       - ./services/auth-service/themes:/opt/keycloak/themes
+      - ./services/auth-service/import:/opt/keycloak/data/import
+      - ./services/auth-service/providers:/opt/keycloak/providers
 
   auth-service:
     build:
@@ -166,23 +173,6 @@ services:
       keycloak:
         condition: service_healthy
 
-  keycloak-setup:
-    image: quay.io/keycloak/keycloak:latest
-    container_name: keycloak-setup
-    volumes:
-      - ./services/auth-service/scripts/keycloak-setup.sh:/scripts/keycloak-setup.sh
-      - ./services/auth-service/themes:/opt/keycloak/themes
-    environment:
-      - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=admin
-      - KEYCLOAK_ADDR=http://keycloak:8080
-      - TARGET_REALM=render-farm
-      - TARGET_CLIENT_ID=auth-service
-      - TARGET_CLIENT_SECRET=secret
-    entrypoint: ["/bin/bash", "/scripts/keycloak-setup.sh"]
-    depends_on:
-      keycloak:
-        condition: service_healthy
 
   api-gateway:
     build:

@@ -1,0 +1,79 @@
+{
+  "realm": "render-farm",
+  "enabled": true,
+  "registrationAllowed": true,
+  "resetPasswordAllowed": true,
+  "rememberMe": true,
+  "loginTheme": "swarmrender",
+  "clients": [
+    {
+      "clientId": "auth-service",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${AUTH_SERVICE_CLIENT_SECRET:-secret}",
+      "serviceAccountsEnabled": true,
+      "redirectUris": [
+        "*"
+      ]
+    },
+    {
+      "clientId": "render-farm-frontend",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "redirectUris": [
+        "http://localhost:5173/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    }
+  ],
+  "identityProviders": [
+    {
+      "alias": "yandex",
+      "providerId": "yandex",
+      "enabled": true,
+      "trustEmail": true,
+      "storeToken": false,
+      "addReadTokenRoleOnImport": true,
+      "authenticateByDefault": false,
+      "config": {
+        "clientId": "${YANDEX_CLIENT_ID:-your-yandex-id}",
+        "clientSecret": "${YANDEX_CLIENT_SECRET:-your-yandex-secret}",
+        "useJwksUrl": "true"
+      }
+    },
+    {
+      "alias": "vk",
+      "providerId": "vk",
+      "enabled": true,
+      "trustEmail": true,
+      "storeToken": false,
+      "addReadTokenRoleOnImport": true,
+      "authenticateByDefault": false,
+      "config": {
+        "clientId": "${VK_CLIENT_ID:-your-vk-id}",
+        "clientSecret": "${VK_CLIENT_SECRET:-your-vk-secret}"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "testuser",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpass",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}
