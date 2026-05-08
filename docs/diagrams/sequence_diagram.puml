@@ -1,0 +1,95 @@
+@startuml
+autonumber
+skinparam maxMessageSize 150
+
+footer Страница %page% из %lastpage%
+
+actor "Пользователь" as user order 1
+participant "Web-клиент" as web order 2
+participant "API Gateway" as gw order 3
+participant "Сервис авторизации" as auth order 4
+participant "Сервис задач" as job_srv order 5
+participant "Обработчик (Узел 1)" as w1 order 6
+participant "Обработчик (Узел 2)" as w2 order 7
+participant "Сервис склейки" as stitch order 8
+queue "Брокер сообщений" as kafka order 9
+database "S3 Хранилище" as s3 order 10
+database "База данных" as db order 11
+
+== 1. Инициализация задачи ==
+
+user -> web++: Запуск рендеринга проекта
+web -> gw++: Запрос на создание задачи
+gw -> auth++: Проверка прав доступа
+auth --> gw--: Подтверждение авторизации
+
+gw -> job_srv++: Регистрация новой задачи
+job_srv -> db++: Сохранение задачи (статус: В очереди)
+db --> job_srv--: Идентификатор задачи
+job_srv -> kafka: Публикация заданий для узлов
+job_srv --> gw--: Подтверждение
+gw --> web--: Отображение статуса
+
+== 2. Параллельный рендеринг ==
+
+par
+    kafka ->> w1++: Получение задачи на рендеринг
+    w1 -> s3: Скачать исходные ассеты проекта
+    w1 -> kafka: Событие: Взял в работу (статус: Рендеринг)
+    kafka ->> job_srv++: Получение сообщения Сегмент 1 в работе
+    job_srv -> db: Обновление прогресса (Часть 1 -> В работе)
+    deactivate job_srv
+    w1 -> w1: Рендеринг
+    w1 -> s3: Сохранение кадров
+    w1 -> kafka--: Событие: Сегмент 1 готов
+    kafka ->> job_srv++: Получение сообщения Сегмент 1 готов
+    job_srv -> db++: Обновление прогресса
+    db --> job_srv--: OK
+    job_srv -> job_srv: Проверка: есть ли еще активные сегменты?
+    deactivate job_srv
+else
+    kafka ->> w2++: Получение задачи на рендеринг
+    w2 -> s3: Скачать исходные ассеты проекта
+    w2 -> kafka: Событие: Взял в работу (статус: Рендеринг)
+    kafka ->> job_srv++: Получение сообщения Сегмент 2 в работе
+    job_srv -> db: Обновление прогресса (Часть 2 -> В работе)
+    deactivate job_srv
+    w2 -> w2: Рендеринг
+    w2 -> s3: Сохранение кадров
+    w2 -> kafka--: Событие: Сегмент 2 готов
+    kafka ->> job_srv++: Получение сообщения Сегмент 2 готов
+    job_srv -> db++: Обновление прогресса
+    db --> job_srv--: OK
+    job_srv -> job_srv: Проверка: все ли сегменты готовы?
+    
+    note right job_srv: Все сегменты завершены.\nПереход к этапу сборки.
+    
+    job_srv -> kafka: Запрос на финальную склейку
+    deactivate job_srv
+end
+
+== 3. Сборка видеопотока ==
+
+kafka ->> stitch++: Получение задания на склейку
+stitch -> kafka: Событие: Начал сборку видео
+kafka ->> job_srv++: Получение сообщения Сборка видео в работе
+job_srv -> db++: Обновление прогресса
+db --> job_srv--: OK
+deactivate job_srv
+stitch -> s3: Загрузка всех кадров
+s3 --> stitch: Данные изображений
+stitch -> stitch: Сборка видеофайла
+stitch -> s3: Сохранение результата
+s3 --> stitch: Ссылка на видео
+stitch -> kafka--: Событие: Видео сформировано
+
+== 4. Завершение ==
+
+kafka ->> job_srv++: Получение уведомления о готовности видео
+job_srv -> db++: Фиксация результата (статус: Завершено)
+db --> job_srv--: OK
+job_srv ->> web: Уведомление через WebSocket
+web -> user: Ссылка на скачивание
+deactivate job_srv
+
+@enduml

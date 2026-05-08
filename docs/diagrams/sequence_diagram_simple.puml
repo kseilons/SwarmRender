@@ -1,0 +1,51 @@
+@startuml
+autonumber
+skinparam maxMessageSize 120
+skinparam ParticipantPadding 10
+skinparam BoxPadding 10
+
+actor "Пользователь" as user
+participant "Сервис задач" as job_srv
+participant "Обработчики" as workers
+participant "Сервис склейки" as stitch
+queue "Kafka" as kafka
+database "Хранилища (S3/DB)" as storage
+
+== 1. Инициализация ==
+user -> job_srv: Запрос на создание задачи
+job_srv -> storage: Сохранение (status: Created)
+job_srv -> kafka: Публикация заданий (сегменты 1..N)
+job_srv --> user: Статус "В очереди"
+
+== 2. Параллельный рендеринг ==
+par
+    kafka ->> workers: Получение задания (Сегмент i)
+    workers -> storage: Загрузка ассетов
+    workers -> kafka: Статус: В работе
+    kafka ->> job_srv: UpdateProgress
+    workers -> workers: Рендеринг кадров
+    workers -> storage: Сохранение PNG
+    workers -> kafka: Статус: Сегмент готов
+else
+    note over workers: Параллельная обработка других сегментов
+end
+
+== 3. Координация и Сборка ==
+kafka ->> job_srv: Обработка события "Сегмент готов"
+job_srv -> storage: Обновление прогресса в БД
+job_srv -> job_srv: Проверка: все ли сегменты готовы?
+
+group При завершении всех сегментов
+    job_srv -> kafka: Запрос на финальную склейку
+    kafka ->> stitch: Задание на сборку
+    stitch -> storage: Загрузка кадров
+    stitch -> stitch: Сборка MP4 (FFmpeg)
+    stitch -> storage: Сохранение результата
+    stitch -> kafka: Видео сформировано
+end
+
+== 4. Завершение ==
+kafka ->> job_srv: Финализация задачи
+job_srv -> storage: Статус: Завершено
+job_srv ->> user: Уведомление (WebSocket)
+@enduml
