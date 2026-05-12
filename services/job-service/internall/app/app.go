@@ -196,3 +196,7 @@ func (a *App) Shutdown() error {
 	a.log.Info("job-service exited")
 	return nil
 }
+
+func (a *App) GetDB() *pgxpool.Pool {
+	return a.infra.Pool
+}
