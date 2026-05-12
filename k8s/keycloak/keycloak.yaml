@@ -189,9 +189,9 @@ spec:
                   key: username
             # Данные для провайдеров
             - name: YANDEX_CLIENT_ID
-              value: "your-id"
+              value: "aje6tkh945300npqqer2"
             - name: YANDEX_CLIENT_SECRET
-              value: "your-secret"
+              value: "yccs__c1982f5d55f2791a83e959410fc7f542a565272795f3ca6f832ab94f66df53da_02bb3314"
             - name: VK_CLIENT_ID
               value: "your-id"
             - name: VK_CLIENT_SECRET
