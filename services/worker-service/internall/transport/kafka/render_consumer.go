@@ -75,6 +75,7 @@ func (c *Consumer) Run(ctx context.Context) error {
 				return nil
 			}
 			c.logger.Error("failed to fetch message from kafka", slog.Any("error", err))
+			time.Sleep(time.Second)
 			continue
 		}
 

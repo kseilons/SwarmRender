@@ -17,12 +17,15 @@ client:
 
 # Run the worker service
 run:
-	go run cmd/worker/main.go
+	go run cmd/app/main.go
 
 # Build the worker service
 build:
-	go build -o bin/worker cmd/worker/main.go
+	go build -o bin/worker cmd/app/main.go
 
 # Run tests
 test:
 	go test ./... -v
+
+test-integration:
+	go test -v -tags=integration ./tests/integration/...
