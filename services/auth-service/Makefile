@@ -12,6 +12,9 @@ run:
 test:
 	go test ./...
 
+test-integration:
+	go test -v -tags=integration ./tests/integration/...
+
 docker-build:
 	docker build -t $(APP_NAME) .
 

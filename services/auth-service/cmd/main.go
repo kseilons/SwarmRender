@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"kseilons/auth-service/internall/app"
 	"kseilons/auth-service/internall/config"
 	"kseilons/auth-service/internall/transport/http"
 	"kseilons/auth-service/internall/usecase"
@@ -22,27 +24,14 @@ func main() {
 	log := logger.SetupLogger(cfg.Env)
 	log.Info("starting auth-service", slog.String("env", cfg.Env))
 
-	keycloakClient := gocloak.NewClient(cfg.Keycloak.BaseURL)
-	authUseCase := usecase.NewAuthUseCase(keycloakClient, cfg.Keycloak)
+	application := app.New(cfg, log)
 
-	handler := http.NewHandler(authUseCase, log)
-
-	if cfg.Env == logger.EnvProd {
-		gin.SetMode(gin.ReleaseMode)
-	}
-	router := gin.Default()
-	p := prometheus.NewPrometheus("auth_service")
-	p.Use(router)
-
-	handler.Register(router)
-
-	serverAddr := fmt.Sprintf(":%d", cfg.HTTP.Port)
-	log.Info("http server starting", slog.String("addr", serverAddr))
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	go func() {
-		if err := router.Run(serverAddr); err != nil {
-			log.Error("failed to start server", slog.Any("error", err))
-			os.Exit(1)
+		if err := application.Run(ctx); err != nil {
+			log.Error("app exited with error", slog.Any("error", err))
 		}
 	}()
 
@@ -50,6 +39,6 @@ func main() {
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
 
 	<-stop
-
-	log.Info("shutting down auth-service")
+	cancel()
+	log.Info("auth-service stopped")
 }
