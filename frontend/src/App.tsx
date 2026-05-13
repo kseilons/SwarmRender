@@ -128,7 +128,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           <div className="flex items-center gap-4">
             <LanguageSwitcher />
 
-            <div 
+            <div
               ref={searchRef}
               className={`search-container ${isSearchExpanded ? 'expanded' : ''}`}
               onClick={() => !isSearchExpanded && setIsSearchExpanded(true)}
@@ -189,7 +189,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   onClick={() => auth.signinRedirect()}
                   className="btn-secondary"
                 >
-                  Login
+                  <Plus size={18} /> <span className="hide-md">{t('common.login')}</span>
                 </button>
               )}
             </div>

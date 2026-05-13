@@ -2,6 +2,7 @@
   "ru": {
     "common": {
       "add_project": "Добавить проект",
+      "login": "Войти",
       "search_placeholder": "Поиск по ID или названию...",
       "back": "Назад к панели",
       "loading": "Синхронизация...",
@@ -97,6 +98,7 @@
   "en": {
     "common": {
       "add_project": "Add Project",
+      "login": "Login",
       "search_placeholder": "Search by ID or name...",
       "back": "Back to Dashboard",
       "loading": "Synchronizing...",
