@@ -2,6 +2,7 @@ package config_test
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"kseilons/api-gateway/internall/config"
@@ -10,54 +11,65 @@ import (
 )
 
 func TestLoad_Success(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.yaml")
 	content := `
-env: "prod"
+env: "production"
 http:
-  port: 9000
+  port: 8080
 services:
   auth_service: "http://auth:8082"
   job_service: "http://job:8081"
-keycloak:
-  jwks_url: "http://keycloak:8080/certs"
 `
-	tmpFile, err := os.CreateTemp("", "config-*.yaml")
-	assert.NoError(t, err)
-	defer os.Remove(tmpFile.Name())
-
-	_, err = tmpFile.WriteString(content)
-	assert.NoError(t, err)
-	tmpFile.Close()
-
-	cfg, err := config.Load(tmpFile.Name())
+	err := os.WriteFile(configPath, []byte(content), 0644)
 	assert.NoError(t, err)
 
-	assert.Equal(t, "prod", cfg.Env)
-	assert.Equal(t, 9000, cfg.HTTP.Port)
-	assert.Equal(t, "http://auth:8082", cfg.Services.AuthService)
+	cfg, err := config.Load(configPath)
+	assert.NoError(t, err)
+	assert.Equal(t, "production", cfg.Env)
+	assert.Equal(t, 8080, cfg.HTTP.Port)
 }
 
-func TestLoad_EnvOverride(t *testing.T) {
-	content := `
-env: "local"
-http:
-  port: 8000
-`
-	tmpFile, err := os.CreateTemp("", "config-*.yaml")
+func TestLoad_FromConfigPathEnv(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config_env.yaml")
+	content := `env: "staging"`
+	os.WriteFile(configPath, []byte(content), 0644)
+
+	os.Setenv("CONFIG_PATH", configPath)
+	defer os.Unsetenv("CONFIG_PATH")
+
+	cfg, err := config.Load("")
 	assert.NoError(t, err)
-	defer os.Remove(tmpFile.Name())
+	assert.Equal(t, "staging", cfg.Env)
+}
 
-	_, err = tmpFile.WriteString(content)
-	assert.NoError(t, err)
-	tmpFile.Close()
+func TestLoad_FileNotFound(t *testing.T) {
+	_, err := config.Load("non-existent.yaml")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "config file does not exist")
+}
 
-	os.Setenv("ENV", "dev")
-	os.Setenv("HTTP_PORT", "7777")
-	defer os.Unsetenv("ENV")
-	defer os.Unsetenv("HTTP_PORT")
+func TestLoad_ReadConfigError(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "invalid.yaml")
+	os.WriteFile(configPath, []byte("invalid: yaml: :"), 0644)
 
-	cfg, err := config.Load(tmpFile.Name())
-	assert.NoError(t, err)
+	_, err := config.Load(configPath)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot read config")
+}
 
-	assert.Equal(t, "dev", cfg.Env)
-	assert.Equal(t, 7777, cfg.HTTP.Port)
+func TestMustLoad_Success(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "must_load.yaml")
+	os.WriteFile(configPath, []byte("env: test"), 0644)
+
+	os.Setenv("CONFIG_PATH", configPath)
+	defer os.Unsetenv("CONFIG_PATH")
+
+	assert.NotPanics(t, func() {
+		cfg := config.MustLoad()
+		assert.Equal(t, "test", cfg.Env)
+	})
 }

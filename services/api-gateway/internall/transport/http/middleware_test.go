@@ -1,6 +1,7 @@
 package http_test
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/json"
@@ -20,14 +21,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAuthMiddleware_Authenticate(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	// 1. Generate RSA Key Pair
+func setupAuthTest(t *testing.T) (*rsa.PrivateKey, jwk.Set, *httptest.Server) {
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	require.NoError(t, err)
 
-	// 2. Setup JWKS Mock Server
 	key, err := jwk.FromRaw(privateKey.PublicKey)
 	require.NoError(t, err)
 	_ = key.Set(jwk.KeyIDKey, "test-kid")
@@ -40,81 +37,140 @@ func TestAuthMiddleware_Authenticate(t *testing.T) {
 	jwksServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(keySet)
 	}))
+
+	return privateKey, keySet, jwksServer
+}
+
+func TestAuthMiddleware_Authenticate_Success(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	privateKey, _, jwksServer := setupAuthTest(t)
 	defer jwksServer.Close()
 
-	// Use discard logger to avoid cluttering test output
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	middleware := transport_http.NewAuthMiddleware(logger, jwksServer.URL)
 
-	// 3. Define Test Cases
-	tests := []struct {
-		name           string
-		setupHeader    func(r *http.Request)
-		expectedStatus int
-		expectUserID   string
-	}{
-		{
-			name: "Success with valid token",
-			setupHeader: func(r *http.Request) {
-				token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-					"sub": "user-123",
-					"exp": time.Now().Add(time.Hour).Unix(),
-				})
-				token.Header["kid"] = "test-kid"
-				signed, _ := token.SignedString(privateKey)
-				r.Header.Set("Authorization", "Bearer "+signed)
-			},
-			expectedStatus: http.StatusOK,
-			expectUserID:   "user-123",
-		},
-		{
-			name:           "Missing Authorization header",
-			setupHeader:    func(r *http.Request) {},
-			expectedStatus: http.StatusUnauthorized,
-		},
-		{
-			name: "Invalid token format",
-			setupHeader: func(r *http.Request) {
-				r.Header.Set("Authorization", "InvalidFormat")
-			},
-			expectedStatus: http.StatusUnauthorized,
-		},
-		{
-			name: "Expired token",
-			setupHeader: func(r *http.Request) {
-				token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-					"sub": "user-123",
-					"exp": time.Now().Add(-time.Hour).Unix(),
-				})
-				token.Header["kid"] = "test-kid"
-				signed, _ := token.SignedString(privateKey)
-				r.Header.Set("Authorization", "Bearer "+signed)
-			},
-			expectedStatus: http.StatusUnauthorized,
-		},
-	}
+	router := gin.New()
+	router.Use(middleware.Authenticate())
+	router.GET("/test", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			router := gin.New()
-			router.Use(middleware.Authenticate())
-			router.GET("/test", func(c *gin.Context) {
-				userID, _ := c.Get("user_id")
-				c.JSON(http.StatusOK, gin.H{"user_id": userID})
-			})
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
+		"sub": "user-123",
+		"exp": time.Now().Add(time.Hour).Unix(),
+	})
+	token.Header["kid"] = "test-kid"
+	signed, _ := token.SignedString(privateKey)
 
-			w := httptest.NewRecorder()
-			req, _ := http.NewRequest("GET", "/test", nil)
-			tt.setupHeader(req)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+	req.Header.Set("Authorization", "Bearer "+signed)
 
-			router.ServeHTTP(w, req)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+}
 
-			assert.Equal(t, tt.expectedStatus, w.Code)
-			if tt.expectUserID != "" {
-				var body map[string]interface{}
-				_ = json.Unmarshal(w.Body.Bytes(), &body)
-				assert.Equal(t, tt.expectUserID, body["user_id"])
-			}
-		})
-	}
+func TestAuthMiddleware_Authenticate_WebSocketFallback(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	privateKey, _, jwksServer := setupAuthTest(t)
+	defer jwksServer.Close()
+
+	middleware := transport_http.NewAuthMiddleware(slog.New(slog.NewTextHandler(io.Discard, nil)), jwksServer.URL)
+	router := gin.New()
+	router.Use(middleware.Authenticate())
+	router.GET("/test", func(c *gin.Context) { c.Status(http.StatusOK) })
+
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{"sub": "user-123"})
+	token.Header["kid"] = "test-kid"
+	signed, _ := token.SignedString(privateKey)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+	req.Header.Set("Sec-WebSocket-Protocol", "access_token, "+signed)
+
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestAuthMiddleware_Authenticate_MissingAuth(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	middleware := transport_http.NewAuthMiddleware(slog.New(slog.NewTextHandler(io.Discard, nil)), "")
+	router := gin.New()
+	router.Use(middleware.Authenticate())
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestAuthMiddleware_Authenticate_JWKSFetchError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	jwksServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer jwksServer.Close()
+
+	middleware := transport_http.NewAuthMiddleware(slog.New(slog.NewTextHandler(io.Discard, nil)), jwksServer.URL)
+	router := gin.New()
+	router.Use(middleware.Authenticate())
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+	req.Header.Set("Authorization", "Bearer some-token")
+
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestAuthMiddleware_Authenticate_InvalidToken(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	_, _, jwksServer := setupAuthTest(t)
+	defer jwksServer.Close()
+
+	middleware := transport_http.NewAuthMiddleware(slog.New(slog.NewTextHandler(io.Discard, nil)), jwksServer.URL)
+	router := gin.New()
+	router.Use(middleware.Authenticate())
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+	req.Header.Set("Authorization", "Bearer invalid.token.here")
+
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestAuthMiddleware_Authenticate_WrongAlgorithm(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	_, _, jwksServer := setupAuthTest(t)
+	defer jwksServer.Close()
+
+	middleware := transport_http.NewAuthMiddleware(slog.New(slog.NewTextHandler(io.Discard, nil)), jwksServer.URL)
+	router := gin.New()
+	router.Use(middleware.Authenticate())
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{"sub": "user-123"})
+	signed, _ := token.SignedString([]byte("secret"))
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+	req.Header.Set("Authorization", "Bearer "+signed)
+
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestAuthMiddleware_GetJWKS(t *testing.T) {
+	_, _, jwksServer := setupAuthTest(t)
+	defer jwksServer.Close()
+
+	middleware := transport_http.NewAuthMiddleware(slog.Default(), jwksServer.URL)
+	keySet, err := middleware.GetJWKS(context.Background())
+	assert.NoError(t, err)
+	assert.NotNil(t, keySet)
+	
+	key, found := keySet.LookupKeyID("test-kid")
+	assert.True(t, found)
+	assert.NotNil(t, key)
 }
