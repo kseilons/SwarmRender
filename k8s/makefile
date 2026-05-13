@@ -1,4 +1,5 @@
 # Полная оркестрация Рендер-Фермы в Kubernetes
+SHELL := bash
 INFRA_DIRS = config postgres kafka minio keycloak
 APP_DIRS = auth-service job-service stitching-service worker-service api-gateway frontend
 MONITORING_DIRS = monitoring/exporters monitoring/prometheus monitoring/grafana
@@ -30,12 +31,12 @@ headlamp-token:
 build:
 	@echo "--- Building all images inside Minikube ---"
 	@powershell -Command "minikube -p $(PROFILE) docker-env | Invoke-Expression; \
-		docker build -t auth-service:latest ./services/auth-service; \
-		docker build -t job-service:latest ./services/job-service; \
-		docker build -t worker-service:latest ./services/worker-service; \
-		docker build -t stitching-service:latest ./services/stitching-service; \
-		docker build -t api-gateway:latest ./services/api-gateway; \
-		docker build -t frontend:latest ./frontend"
+		docker build -t auth-service:latest ../services/auth-service; \
+		docker build -t job-service:latest ../services/job-service; \
+		docker build -t worker-service:latest ../services/worker-service; \
+		docker build -t stitching-service:latest ../services/stitching-service; \
+		docker build -t api-gateway:latest ../services/api-gateway; \
+		docker build -t frontend:latest ../frontend"
 
 infra: $(INFRA_DIRS)
 apps: $(APP_DIRS)

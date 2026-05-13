@@ -14,6 +14,7 @@ spec:
       labels:
         app: worker-service
     spec:
+      runtimeClassName: nvidia
       containers:
         - name: worker-service
           image: worker-service:latest
@@ -23,6 +24,12 @@ spec:
               value: "/config/config.yaml"
             - name: NVIDIA_DRIVER_CAPABILITIES
               value: "all"
+            - name: NVIDIA_VISIBLE_DEVICES
+              value: "all"
+            - name: LD_LIBRARY_PATH
+              value: "/usr/lib/wsl/drivers/nv_dispsi.inf_amd64_fe1c50c690e00e9a:/usr/lib/x86_64-linux-gnu"
+          securityContext:
+            privileged: true
           resources:
             limits:
               nvidia.com/gpu: "1" # Проброс GPU
@@ -32,6 +39,10 @@ spec:
               readOnly: true
             - name: shm
               mountPath: /dev/shm
+            - name: wsl-drivers
+              mountPath: /usr/lib/wsl/drivers
+            - name: dxg-device
+              mountPath: /dev/dxg
       volumes:
         - name: config-volume
           configMap:
@@ -43,3 +54,9 @@ spec:
           emptyDir:
             medium: Memory
             sizeLimit: 2Gi
+        - name: wsl-drivers
+          hostPath:
+            path: /usr/lib/wsl/drivers
+        - name: dxg-device
+          hostPath:
+            path: /dev/dxg

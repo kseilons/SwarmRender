@@ -8,9 +8,6 @@ export const userManager = new UserManager({
   client_id: clientId,
   redirect_uri: window.location.origin,
   userStore: new WebStorageStateStore({ store: window.sessionStorage }),
-  onSigninCallback: () => {
-    window.history.replaceState({}, document.title, window.location.pathname);
-  },
 });
 
 export const getAccessToken = async (): Promise<string | null> => {

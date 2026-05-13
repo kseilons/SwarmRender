@@ -42,7 +42,7 @@ metadata:
     kubernetes.io/ingress.class: nginx
 spec:
   rules:
-    - host: render-farm.local
+    - host: swarmrender.ru
       http:
         paths:
           - path: /
