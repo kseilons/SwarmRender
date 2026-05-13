@@ -11,8 +11,13 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+type Writer interface {
+	WriteMessages(ctx context.Context, msgs ...kafka.Message) error
+	Close() error
+}
+
 type ResultProducer struct {
-	writer *kafka.Writer
+	writer Writer
 	logger *slog.Logger
 }
 
