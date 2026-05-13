@@ -2,20 +2,13 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"kseilons/auth-service/internall/app"
 	"kseilons/auth-service/internall/config"
-	"kseilons/auth-service/internall/transport/http"
-	"kseilons/auth-service/internall/usecase"
 	"kseilons/auth-service/pkg/logger"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/Nerzal/gocloak/v13"
-	"github.com/gin-gonic/gin"
-	prometheus "github.com/zsais/go-gin-prometheus"
 )
 
 func main() {

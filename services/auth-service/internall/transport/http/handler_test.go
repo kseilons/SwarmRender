@@ -111,3 +111,68 @@ func TestHandler_Refresh_Success(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 }
+
+func TestHandler_Health(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := transport_http.NewHandler(nil, slog.Default())
+	router := gin.New()
+	handler.Register(router)
+
+	w := httptest.NewRecorder()
+	r, _ := http.NewRequest(http.MethodGet, "/health", nil)
+	router.ServeHTTP(w, r)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestHandler_Register_Failure(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	mockUC := mocks.NewAuthUseCase(t)
+	handler := transport_http.NewHandler(mockUC, slog.Default())
+
+	router := gin.New()
+	handler.Register(router)
+
+	t.Run("UseCaseError", func(t *testing.T) {
+		req := domain.RegisterRequest{Username: "u", Email: "u@u.com", Password: "p"}
+		mockUC.On("Register", mock.Anything, req).Return(errors.New("fail")).Once()
+		body, _ := json.Marshal(req)
+		w := httptest.NewRecorder()
+		r, _ := http.NewRequest(http.MethodPost, "/auth/register", bytes.NewBuffer(body))
+		router.ServeHTTP(w, r)
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+	})
+
+	t.Run("BadRequest", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		r, _ := http.NewRequest(http.MethodPost, "/auth/register", bytes.NewBuffer([]byte("invalid")))
+		router.ServeHTTP(w, r)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+}
+
+func TestHandler_Refresh_Failure(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	mockUC := mocks.NewAuthUseCase(t)
+	handler := transport_http.NewHandler(mockUC, slog.Default())
+
+	router := gin.New()
+	handler.Register(router)
+
+	t.Run("UseCaseError", func(t *testing.T) {
+		mockUC.On("RefreshToken", mock.Anything, "bad").Return(nil, errors.New("fail")).Once()
+		body, _ := json.Marshal(map[string]string{"refresh_token": "bad"})
+		w := httptest.NewRecorder()
+		r, _ := http.NewRequest(http.MethodPost, "/auth/refresh", bytes.NewBuffer(body))
+		router.ServeHTTP(w, r)
+		assert.Equal(t, http.StatusUnauthorized, w.Code)
+	})
+
+	t.Run("MissingToken", func(t *testing.T) {
+		body, _ := json.Marshal(map[string]string{})
+		w := httptest.NewRecorder()
+		r, _ := http.NewRequest(http.MethodPost, "/auth/refresh", bytes.NewBuffer(body))
+		router.ServeHTTP(w, r)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+}

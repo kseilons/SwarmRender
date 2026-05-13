@@ -7,6 +7,26 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestMetadataTask_LogAttrs(t *testing.T) {
+	task := MetadataTask{
+		BaseTask: BaseTask{
+			ProjectID: "proj-123",
+		},
+		MainFileURL: "main.blend",
+	}
+
+	attrs := task.LogAttrs()
+	attrMap := make(map[string]any)
+	for i := 0; i < len(attrs); i++ {
+		if attr, ok := attrs[i].(slog.Attr); ok {
+			attrMap[attr.Key] = attr.Value.Any()
+		}
+	}
+
+	assert.Equal(t, "proj-123", attrMap["project_id"])
+	assert.Equal(t, "main.blend", attrMap["main_file_url"])
+}
+
 func TestRenderTask_LogAttrs(t *testing.T) {
 	task := RenderTask{
 		BaseTask: BaseTask{
@@ -24,7 +44,6 @@ func TestRenderTask_LogAttrs(t *testing.T) {
 
 	attrs := task.LogAttrs()
 
-	// Convert slice of any to map for easier assertion
 	attrMap := make(map[string]any)
 	for i := 0; i < len(attrs); i++ {
 		if attr, ok := attrs[i].(slog.Attr); ok {

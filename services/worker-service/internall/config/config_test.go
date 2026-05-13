@@ -116,3 +116,19 @@ func TestLoad_MalformedYAML(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, cfg)
 }
+
+func TestMustLoad_Success(t *testing.T) {
+	tmpFile, err := os.CreateTemp("", "must-config-*.yaml")
+	assert.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	_, _ = tmpFile.WriteString("blender:\n  path: \"blender\"\nminio:\n  access_key: \"ak\"\n  secret_key: \"sk\"")
+	tmpFile.Close()
+
+	os.Setenv("CONFIG_PATH", tmpFile.Name())
+	defer os.Unsetenv("CONFIG_PATH")
+
+	// Should not exit/panic
+	cfg := MustLoad()
+	assert.NotNil(t, cfg)
+}

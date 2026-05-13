@@ -75,3 +75,38 @@ func TestLoad_MissingRequired(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, cfg)
 }
+
+func TestLoad_NoFile(t *testing.T) {
+	cfg, err := Load("non-existent-path.yaml")
+	assert.Error(t, err)
+	assert.Nil(t, cfg)
+}
+
+func TestLoad_InvalidYaml(t *testing.T) {
+	tmpFile, err := os.CreateTemp("", "config-invalid-*.yaml")
+	assert.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	_, _ = tmpFile.WriteString("invalid: [yaml: structure")
+	tmpFile.Close()
+
+	_, err = Load(tmpFile.Name())
+	assert.Error(t, err)
+}
+
+func TestLoad_DefaultPath(t *testing.T) {
+	content := "keycloak:\n  client_id: \"c\"\n  client_secret: \"s\""
+
+	// Create a temporary file to act as the default config
+	tmpFile, _ := os.CreateTemp("", "config-*.yaml")
+	defer os.Remove(tmpFile.Name())
+	_, _ = tmpFile.WriteString(content)
+	tmpFile.Close()
+
+	os.Setenv("CONFIG_PATH", tmpFile.Name())
+	defer os.Unsetenv("CONFIG_PATH")
+
+	cfg, err := Load("")
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
+}

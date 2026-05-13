@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -10,15 +9,7 @@ import (
 
 	"kseilons/worker-service/internall/app"
 	"kseilons/worker-service/internall/config"
-	"kseilons/worker-service/internall/render"
-	"kseilons/worker-service/internall/repository"
-	"kseilons/worker-service/internall/transport/kafka"
-	"kseilons/worker-service/internall/usecase"
 	"kseilons/worker-service/pkg/logger"
-	"net/http"
-
-	"github.com/gin-gonic/gin"
-	prometheus "github.com/zsais/go-gin-prometheus"
 )
 
 func main() {
@@ -43,7 +34,7 @@ func main() {
 
 	<-stop
 	cancel()
-	
+
 	// Wait a bit for graceful shutdown
 	time.Sleep(1 * time.Second)
 	log.Info("worker-service stopped")
