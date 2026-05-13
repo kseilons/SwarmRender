@@ -1,8 +1,20 @@
 resources:
-
-  limits:
-    memory: 512Mi
-    cpu: ~
   requests:
-    memory: 96Mi
+    cpu: 100m
+    memory: 1Gi
+  limits:
+    memory: 2Gi
 
+livenessProbe:
+  initialDelaySeconds: 60
+readinessProbe:
+  initialDelaySeconds: 60
+
+leaderElection:
+  enable: false
+
+extraEnvs:
+  - name: STRIMZI_KUBERNETES_VERSION
+    value: "major=1,minor=30,gitVersion=v1.30.0"
+  - name: STRIMZI_OPERATOR_LOG_LEVEL
+    value: INFO

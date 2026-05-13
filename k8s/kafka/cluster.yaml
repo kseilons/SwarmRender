@@ -12,8 +12,8 @@ spec:
     limits:
       memory: 2048Mi
   jvmOptions:
-    -Xms: 1024m
-    -Xmx: 1024m
+      "-Xms": "1024m"
+      "-Xmx": "1024m"
   roles:
     - controller
     - broker
@@ -50,8 +50,8 @@ spec:
     groupRegex: ".*"
 
   kafka:
-    version: 3.9.2
-    metadataVersion: 3.9.2-IV0
+    version: 3.9.0
+    metadataVersion: 3.9-IV0
     listeners:
       - name: plain
         port: 9092

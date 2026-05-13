@@ -1,5 +1,8 @@
 all:
-	helm upgrade --install strimzi-cluster-operator oci://quay.io/strimzi-helm/strimzi-kafka-operator --set replicas=1 --version 0.45.0 --namespace kafka --create-namespace
+	helm upgrade --install strimzi-cluster-operator oci://quay.io/strimzi-helm/strimzi-kafka-operator \
+	--version 0.45.0 \
+	--namespace kafka \
+	-f values.yaml
 
 cluster:
 	kubectl apply -f cluster.yaml -n kafka
