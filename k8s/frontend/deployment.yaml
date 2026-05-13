@@ -49,8 +49,8 @@ spec:
     - host: swarmrender.ru
       http:
         paths:
-          - path: /
-            pathType: Prefix
+          - path: /(.*)
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: frontend
