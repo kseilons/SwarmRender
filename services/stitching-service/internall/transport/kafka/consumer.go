@@ -13,8 +13,15 @@ type StitchingUseCase interface {
 	Execute(ctx context.Context, logger *slog.Logger, task domain.StitchingTask) error
 }
 
+type Reader interface {
+	FetchMessage(ctx context.Context) (kafka.Message, error)
+	CommitMessages(ctx context.Context, msgs ...kafka.Message) error
+	Close() error
+	Config() kafka.ReaderConfig
+}
+
 type Consumer struct {
-	reader  *kafka.Reader
+	reader  Reader
 	useCase StitchingUseCase
 	logger  *slog.Logger
 }

@@ -8,8 +8,13 @@ import (
 	"kseilons/stitching-service/internall/domain"
 )
 
+type Writer interface {
+	WriteMessages(ctx context.Context, msgs ...kafka.Message) error
+	Close() error
+}
+
 type Producer struct {
-	writer *kafka.Writer
+	writer Writer
 }
 
 func NewProducer(brokers []string, topic string) *Producer {
