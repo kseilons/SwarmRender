@@ -36,7 +36,7 @@
       "targets": [
         { "expr": "sum(rate(http_requests_total[1m]))", "refId": "A" }
       ],
-      "title": "Global RPS (1m)",
+      "title": "Общий RPS (1 мин)",
       "type": "stat"
     },
     {
@@ -63,7 +63,7 @@
       "targets": [
         { "expr": "(sum(rate(http_requests_total{code=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m]))) * 100", "refId": "A" }
       ],
-      "title": "Global Error Rate (5m)",
+      "title": "Глобальный уровень ошибок (5 мин)",
       "type": "stat"
     },
     {
@@ -79,7 +79,7 @@
       "targets": [
         { "expr": "sum(rate(http_request_duration_seconds_sum[5m])) / sum(rate(http_request_duration_seconds_count[5m]))", "refId": "A" }
       ],
-      "title": "Avg Latency",
+      "title": "Средняя задержка",
       "type": "stat"
     },
     {
@@ -92,16 +92,67 @@
         "reduceOptions": { "calcs": ["lastNotNull"] }
       },
       "targets": [
-        { "expr": "sum by (service) (rate(http_requests_total[1m]))", "legendFormat": "{{service}}", "refId": "A" }
+        { "expr": "sum by (job) (rate(http_requests_total[1m]))", "legendFormat": "{{job}}", "refId": "A" }
       ],
-      "title": "RPS by Service",
+      "title": "RPS по сервисам",
       "type": "bargauge"
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 4 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "id": 150,
+      "title": "Пайплайн рендер-фермы (Бизнес-логика)",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 6 },
+      "id": 151,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [ { "expr": "sum(worker_jobs_active)", "refId": "A" } ],
+      "title": "Активные задачи рендеринга",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": { "unit": "short" }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 6 },
+      "id": 152,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [ { "expr": "sum(worker_frames_rendered_total)", "refId": "A" } ],
+      "title": "Всего отрендерено кадров",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "id": 153,
+      "targets": [
+        { "expr": "sum by (stage) (rate(worker_stage_duration_seconds_sum[5m]) / rate(worker_stage_duration_seconds_count[5m]))", "legendFormat": "Avg {{stage}} time", "refId": "A" }
+      ],
+      "title": "Анализ длительности этапов (ср.)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": { "h": 4, "w": 12, "x": 0, "y": 10 },
+      "id": 154,
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(worker_queue_wait_duration_seconds_bucket[5m])) by (le))", "legendFormat": "P95 Wait Time", "refId": "A" }
+      ],
+      "title": "Время ожидания в очереди",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
       "id": 100,
-      "title": "HTTP Traffic Detail",
+      "title": "Детализация HTTP трафика",
       "type": "row"
     },
     {
@@ -114,7 +165,7 @@
       "targets": [
         { "expr": "sum by (code) (rate(http_requests_total[1m]))", "legendFormat": "HTTP {{code}}", "refId": "A" }
       ],
-      "title": "Requests by Status Code (Stacked)",
+      "title": "Запросы по статус-кодам (накопительный)",
       "type": "timeseries"
     },
     {
@@ -132,14 +183,14 @@
         { "expr": "sum by (code) (increase(http_requests_total[5m]))", "legendFormat": "Last 5m", "refId": "B" },
         { "expr": "sum by (code) (increase(http_requests_total[1h]))", "legendFormat": "Last 1h", "refId": "C" }
       ],
-      "title": "Request Counts (Summary)",
+      "title": "Количество запросов (сводка)",
       "type": "table"
     },
     {
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 },
       "id": 101,
-      "title": "Performance & Errors",
+      "title": "Производительность и ошибки",
       "type": "row"
     },
     {
@@ -150,10 +201,10 @@
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
       "id": 20,
       "targets": [
-        { "expr": "histogram_quantile(0.99, sum by (le, service) (rate(http_request_duration_seconds_bucket[5m])))", "legendFormat": "{{service}} P99", "refId": "A" },
-        { "expr": "histogram_quantile(0.50, sum by (le, service) (rate(http_request_duration_seconds_bucket[5m])))", "legendFormat": "{{service}} Median", "refId": "B" }
+        { "expr": "histogram_quantile(0.99, sum by (le, job) (rate(http_request_duration_seconds_bucket[5m])))", "legendFormat": "{{job}} P99", "refId": "A" },
+        { "expr": "histogram_quantile(0.50, sum by (le, job) (rate(http_request_duration_seconds_bucket[5m])))", "legendFormat": "{{job}} Median", "refId": "B" }
       ],
-      "title": "Latency Distribution (P99 vs Median)",
+      "title": "Распределение задержки (P99 vs Медиана)",
       "type": "timeseries"
     },
     {
@@ -164,17 +215,17 @@
         "legend": { "displayMode": "list", "placement": "bottom" }
       },
       "targets": [
-        { "expr": "sum by (service) (rate(http_requests_total{code=~\"4..\"}[5m]))", "legendFormat": "{{service}} (4xx)", "refId": "A" },
-        { "expr": "sum by (service) (rate(http_requests_total{code=~\"5..\"}[5m]))", "legendFormat": "{{service}} (5xx)", "refId": "B" }
+        { "expr": "sum by (job) (rate(http_requests_total{code=~\"4..\"}[5m]))", "legendFormat": "{{job}} (4xx)", "refId": "A" },
+        { "expr": "sum by (job) (rate(http_requests_total{code=~\"5..\"}[5m]))", "legendFormat": "{{job}} (5xx)", "refId": "B" }
       ],
-      "title": "Errors Trend (4xx vs 5xx)",
+      "title": "Тренды ошибок (4xx vs 5xx)",
       "type": "timeseries"
     },
     {
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
       "id": 102,
-      "title": "Infrastructure Health",
+      "title": "Состояние инфраструктуры",
       "type": "row"
     },
     {
@@ -190,7 +241,7 @@
       "targets": [
         { "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100", "refId": "A" }
       ],
-      "title": "Host Memory",
+      "title": "Оперативная память хоста",
       "type": "gauge"
     },
     {
@@ -206,7 +257,7 @@
       "targets": [
         { "expr": "avg(nvidia_gpu_utilization)", "refId": "A" }
       ],
-      "title": "Avg GPU Utilization",
+      "title": "Средняя загрузка GPU",
       "type": "gauge"
     },
     {
@@ -218,7 +269,7 @@
         { "expr": "node_load5", "legendFormat": "5m", "refId": "B" },
         { "expr": "node_load15", "legendFormat": "15m", "refId": "C" }
       ],
-      "title": "System Load",
+      "title": "Нагрузка на систему",
       "type": "timeseries"
     }
   ],

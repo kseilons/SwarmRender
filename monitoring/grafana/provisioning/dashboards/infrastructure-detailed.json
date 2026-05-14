@@ -11,7 +11,7 @@
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
       "id": 100,
-      "title": "Database Deep Dive (PostgreSQL)",
+      "title": "Глубокий анализ БД (PostgreSQL)",
       "type": "row"
     },
     {
@@ -23,7 +23,7 @@
       "id": 1,
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
       "targets": [ { "expr": "sum(pg_database_size_bytes)", "refId": "A" } ],
-      "title": "Total DB Size",
+      "title": "Общий размер БД",
       "type": "stat"
     },
     {
@@ -32,7 +32,7 @@
       "id": 2,
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
       "targets": [ { "expr": "pg_stat_activity_count", "refId": "A" } ],
-      "title": "Active Connections",
+      "title": "Активные подключения",
       "type": "stat"
     },
     {
@@ -43,14 +43,14 @@
         { "expr": "rate(pg_stat_database_xact_commit[5m])", "legendFormat": "Commits", "refId": "A" },
         { "expr": "rate(pg_stat_database_xact_rollback[5m])", "legendFormat": "Rollbacks", "refId": "B" }
       ],
-      "title": "Transaction Throughput",
+      "title": "Пропускная способность транзакций",
       "type": "timeseries"
     },
     {
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
       "id": 101,
-      "title": "Messaging Pipeline (Kafka)",
+      "title": "Шина сообщений (Kafka)",
       "type": "row"
     },
     {
@@ -60,7 +60,7 @@
       "targets": [
         { "expr": "sum by (topic) (rate(kafka_topic_partition_current_offset[5m]))", "legendFormat": "{{topic}} (msgs/s)", "refId": "A" }
       ],
-      "title": "Messages Inbound Rate",
+      "title": "Скорость входящих сообщений",
       "type": "timeseries"
     },
     {
@@ -71,14 +71,14 @@
       "targets": [
         { "expr": "sum by (consumergroup) (kafka_consumergroup_lag)", "legendFormat": "{{consumergroup}}", "refId": "A" }
       ],
-      "title": "Consumer Lag by Group",
+      "title": "Лаг потребителей по группам",
       "type": "bargauge"
     },
     {
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
       "id": 102,
-      "title": "Object Storage (Minio/S3)",
+      "title": "Объектное хранилище (Minio/S3)",
       "type": "row"
     },
     {
@@ -89,7 +89,7 @@
         { "expr": "sum(rate(minio_s3_requests_total[5m]))", "legendFormat": "Total Requests", "refId": "A" },
         { "expr": "sum(rate(minio_s3_requests_errors_total[5m]))", "legendFormat": "Errors", "refId": "B" }
       ],
-      "title": "S3 API Traffic",
+      "title": "Трафик S3 API",
       "type": "timeseries"
     },
     {
@@ -98,7 +98,7 @@
       "gridPos": { "h": 8, "w": 8, "x": 8, "y": 19 },
       "id": 21,
       "targets": [ { "expr": "minio_cluster_disk_usage_total_bytes", "refId": "A" } ],
-      "title": "Total Storage Used",
+      "title": "Использовано места",
       "type": "timeseries"
     },
     {
@@ -107,7 +107,7 @@
       "gridPos": { "h": 8, "w": 8, "x": 16, "y": 19 },
       "id": 22,
       "targets": [ { "expr": "minio_cluster_disk_usage_total_bytes / minio_cluster_disk_total_bytes * 100", "refId": "A" } ],
-      "title": "Storage Fill Percentage",
+      "title": "Процент заполнения хранилища",
       "type": "gauge"
     }
   ],
