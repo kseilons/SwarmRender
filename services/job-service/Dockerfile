@@ -15,6 +15,7 @@ WORKDIR /app
 
 COPY --from=builder /app/job-service .
 COPY config/ config/
+COPY migrations/ migrations/
 
 EXPOSE 8081
 

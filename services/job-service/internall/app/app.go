@@ -15,6 +15,7 @@ import (
 	transport_kafka "kseilons/job-service/internall/transport/kafka"
 	"kseilons/job-service/internall/usecase"
 	"kseilons/job-service/pkg/logger"
+	"kseilons/job-service/pkg/migrator"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -69,7 +70,12 @@ func (a *App) Init(ctx context.Context) error {
 
 func (a *App) initInfrastructure(ctx context.Context) error {
 	// Database
-	pool, err := pgxpool.New(ctx, a.cfg.Database.URL())
+	dbURL := a.cfg.Database.URL()
+	
+	// Run Migrations
+	migrator.MustRun(dbURL, "migrations", a.log)
+
+	pool, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		return fmt.Errorf("failed to connect to postgres: %w", err)
 	}
