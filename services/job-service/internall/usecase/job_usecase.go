@@ -256,6 +256,17 @@ func (uc *JobUseCase) HandleTaskResult(ctx context.Context, result domain.Render
 		}
 	}
 
+	// Preview generation logic
+	if result.Status == domain.StatusCompleted && result.Type == domain.TypeRender {
+		job, err := uc.jobRepo.GetJob(ctx, jobID, "")
+		if err == nil && (job.PreviewURL == nil || *job.PreviewURL == "") {
+			task, err := uc.taskRepo.GetTask(ctx, result.TaskID)
+			if err == nil {
+				uc.generatePreview(ctx, job, task, logger)
+			}
+		}
+	}
+
 	// Check job status
 	stats, err := uc.taskRepo.GetJobTasksStatus(ctx, jobID)
 	if err != nil {
@@ -284,17 +295,6 @@ func (uc *JobUseCase) HandleTaskResult(ctx context.Context, result domain.Render
 	if stats[domain.StatusFailed] == totalTasks {
 		logger.Info("all tasks failed, transitioning job to FAILED", slog.String("job_id", jobID))
 		return uc.UpdateJobStatus(ctx, jobID, domain.StatusFailed, logger)
-	}
-
-	// Preview generation logic
-	if result.Status == domain.StatusCompleted && result.Type == domain.TypeRender {
-		job, err := uc.jobRepo.GetJob(ctx, jobID, "")
-		if err == nil && (job.PreviewURL == nil || *job.PreviewURL == "") {
-			task, err := uc.taskRepo.GetTask(ctx, result.TaskID)
-			if err == nil {
-				uc.generatePreview(ctx, job, task, logger)
-			}
-		}
 	}
 
 	// If some tasks failed but not all, we might want to mark job as FAILED eventually,
@@ -532,18 +532,30 @@ func (uc *JobUseCase) generatePreview(ctx context.Context, job domain.Job, task 
 	dstKey := fmt.Sprintf("%s_preview.png", projectID)
 
 	var lastErr error
-	for _, ext := range exts {
-		srcKey := fmt.Sprintf("%s_results/%s%04d%s", projectID, scenePrefix, frameNum, ext)
-		logger.Info("attempting to generate preview", slog.String("src", srcKey), slog.String("dst", dstKey))
-
-		if err := uc.minioRepo.CopyObject(ctx, srcKey, dstKey); err == nil {
-			logger.Info("successfully generated preview", slog.String("src", srcKey))
-			if err := uc.jobRepo.UpdateJobPreview(ctx, job.ID, dstKey); err != nil {
-				logger.Error("failed to update job preview path in DB", slog.Any("error", err))
-			}
-			return
+	// Try combinations of scene prefix and extensions
+	for _, useScene := range []bool{true, false} {
+		currentPrefix := ""
+		if useScene && scenePrefix != "" {
+			currentPrefix = scenePrefix
+		} else if !useScene {
+			currentPrefix = "" // Fallback to no prefix
 		} else {
-			lastErr = err
+			continue // Already handled
+		}
+
+		for _, ext := range exts {
+			srcKey := fmt.Sprintf("%s_results/%s%04d%s", projectID, currentPrefix, frameNum, ext)
+			logger.Info("attempting to generate preview", slog.String("src", srcKey), slog.String("dst", dstKey))
+
+			if err := uc.minioRepo.CopyObject(ctx, srcKey, dstKey); err == nil {
+				logger.Info("successfully generated preview", slog.String("src", srcKey))
+				if err := uc.jobRepo.UpdateJobPreview(ctx, job.ID, dstKey); err != nil {
+					logger.Error("failed to update job preview path in DB", slog.Any("error", err))
+				}
+				return
+			} else {
+				lastErr = err
+			}
 		}
 	}
 
