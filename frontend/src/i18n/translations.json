@@ -52,7 +52,11 @@
       "realtime_trace": "Поток событий",
       "active_graph": "График активной производительности",
       "blender_logs": "Логи рендеринга Blender",
-      "show_logs": "Показать логи"
+      "show_logs": "Показать логи",
+      "timeline": "Время",
+      "created": "Создан",
+      "completed": "Завершен",
+      "duration": "Длительность"
     },
     "create_modal": {
       "title": "Новый проект рендеринга",
@@ -148,7 +152,11 @@
       "realtime_trace": "Event Stream",
       "active_graph": "Active Performance Graph",
       "blender_logs": "Blender Render Logs",
-      "show_logs": "Show Logs"
+      "show_logs": "Show Logs",
+      "timeline": "Timeline",
+      "created": "Created",
+      "completed": "Completed",
+      "duration": "Duration"
     },
     "create_modal": {
       "title": "New Rendering Project",

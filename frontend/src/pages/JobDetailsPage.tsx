@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { jobService } from '../services/api';
 import { wsService } from '../services/ws';
-import { ChevronLeft, Cpu, HardDrive, Layout, RefreshCw, RotateCcw, Layers, Download, FileText, X } from 'lucide-react';
+import { ChevronLeft, Cpu, HardDrive, Layout, RefreshCw, RotateCcw, Layers, Download, FileText, X, Clock, Calendar, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ProgressBar from '../components/common/ProgressBar';
 import PreviewPlaceholder from '../components/common/PreviewPlaceholder';
@@ -113,6 +113,22 @@ const JobDetailsPage: React.FC = () => {
       console.error('Download failed:', error);
       window.open(url, '_blank');
     }
+  };
+
+  const formatDuration = (start: string, end?: string) => {
+    if (!end) return null;
+    const diff = new Date(end).getTime() - new Date(start).getTime();
+    if (diff <= 0) return '0s';
+    
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    
+    return [
+      h > 0 ? `${h}h` : '',
+      m > 0 ? `${m}m` : '',
+      `${s}s`
+    ].filter(Boolean).join(' ');
   };
 
   // WebSocket Subscription
@@ -290,6 +306,46 @@ const JobDetailsPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                <div className="flex items-center gap-4 group p-3 -m-3 rounded-2xl hover:bg-white/[0.03] transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40 group-hover:text-amber-400 group-hover:bg-amber-500/10 transition-all border border-white/5 shadow-inner">
+                    <Calendar size={18} />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-white/30 uppercase font-black tracking-[0.15em] leading-none mb-1.5">{t('job_details.created')}</span>
+                    <span className="font-bold text-white text-lg tracking-tight leading-tight group-hover:text-amber-400 transition-colors">
+                      {new Date(job.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                    </span>
+                  </div>
+                </div>
+
+                {job.completed_at && (
+                  <>
+                    <div className="flex items-center gap-4 group p-3 -m-3 rounded-2xl hover:bg-white/[0.03] transition-colors">
+                      <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40 group-hover:text-emerald-400 group-hover:bg-emerald-500/10 transition-all border border-white/5 shadow-inner">
+                        <CheckCircle size={18} />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-white/30 uppercase font-black tracking-[0.15em] leading-none mb-1.5">{t('job_details.completed')}</span>
+                        <span className="font-bold text-white text-lg tracking-tight leading-tight group-hover:text-emerald-400 transition-colors">
+                          {new Date(job.completed_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 group p-3 -m-3 rounded-2xl hover:bg-white/[0.03] transition-colors">
+                      <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40 group-hover:text-cyan-400 group-hover:bg-cyan-500/10 transition-all border border-white/5 shadow-inner">
+                        <Clock size={18} />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-white/30 uppercase font-black tracking-[0.15em] leading-none mb-1.5">{t('job_details.duration')}</span>
+                        <span className="font-bold text-white text-lg tracking-tight leading-tight group-hover:text-cyan-400 transition-colors">
+                          {formatDuration(job.created_at, job.completed_at)}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

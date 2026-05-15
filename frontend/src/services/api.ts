@@ -33,6 +33,7 @@ export interface Job {
   options: RenderOptions;
   created_at: string;
   updated_at: string;
+  completed_at?: string;
 }
 
 export interface Task {
