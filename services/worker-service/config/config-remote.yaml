@@ -1,0 +1,23 @@
+env: "dev"
+blender:
+  path: "/opt/blender/blender"
+  allowed_devices:
+    - "CPU"
+    - "CUDA"
+    - "OPTIX"
+  threads: 0
+
+kafka:
+  brokers:
+    - "169.254.253.121:9092"
+  render_topic: "render-tasks"
+  metadata_topic: "metadata-tasks"
+  result_topic: "render-results"
+  group_id: "worker-service"
+
+minio:
+  endpoint: "169.254.253.121:9000"
+  access_key: "admin"
+  secret_key: "password"
+  use_ssl: false
+  bucket: "blender-renders"
