@@ -16,12 +16,26 @@ body {
   font-family: 'Inter', sans-serif !important;
   color: var(--text-primary) !important;
   display: flex !important;
+  flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
 }
 
-#kc-header {
-  display: none !important;
+#kc-header-wrapper {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 0 !important;
+  margin-bottom: 30px !important;
+}
+
+#kc-header-wrapper::after {
+  content: "SWARMRENDER" !important;
+  font-size: 36px !important;
+  font-weight: 800 !important;
+  color: var(--accent-primary) !important;
+  letter-spacing: 6px !important;
+  text-shadow: 0 0 25px rgba(0, 210, 255, 0.5) !important;
 }
 
 .login-pf-page {
@@ -30,96 +44,203 @@ body {
 
 .card-pf {
   background: rgba(20, 20, 25, 0.7) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
+  backdrop-filter: blur(25px) !important;
+  -webkit-backdrop-filter: blur(25px) !important;
   border: 1px solid var(--glass-border) !important;
-  border-radius: 24px !important;
-  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5) !important;
-  padding: 40px !important;
+  border-radius: 28px !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6) !important;
+  padding: 45px !important;
   width: 100% !important;
-  max-width: 440px !important;
-  margin-top: 20px !important;
+  max-width: 420px !important;
+  position: relative !important;
 }
 
 #kc-page-title {
   font-family: 'Outfit', sans-serif !important;
-  font-size: 24px !important;
-  font-weight: 700 !important;
-  text-align: center !important;
+  font-size: 22px !important;
+  font-weight: 600 !important;
+  text-align: left !important;
   margin-bottom: 30px !important;
   color: var(--text-primary) !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.05em !important;
+  border-bottom: 2px solid var(--accent-primary) !important;
+  display: inline-block !important;
+  padding-bottom: 8px !important;
+}
+
+/* RU | EN Switcher - Final Version */
+#kc-locale {
+  position: absolute !important;
+  top: 25px !important;
+  right: 25px !important;
+}
+
+#kc-locale-wrapper {
+  display: flex !important;
+}
+
+/* Прячем главную кнопку-заголовок, она создает дубль */
+#kc-current-locale-link {
+  display: none !important;
+}
+
+#kc-locale-dropdown ul {
+  display: flex !important;
+  gap: 8px !important;
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  position: static !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+#kc-locale-dropdown ul a {
+  font-size: 0 !important;
+  /* Прячем текст */
+  text-decoration: none !important;
+  width: 36px !important;
+  height: 26px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  transition: all 0.2s !important;
+  position: relative !important;
+}
+
+#kc-locale-dropdown ul a::after {
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  color: var(--text-secondary) !important;
+  position: absolute !important;
+}
+
+/* Мапинг RU / EN */
+#kc-locale-dropdown ul a[href*="kc_locale=ru"]::after {
+  content: "RU" !important;
+}
+
+#kc-locale-dropdown ul a[href*="kc_locale=en"]::after {
+  content: "EN" !important;
+}
+
+/* Подсветка активного через атрибут lang страницы */
+html[lang="ru"] #kc-locale-dropdown ul a[href*="kc_locale=ru"],
+html[lang="en"] #kc-locale-dropdown ul a[href*="kc_locale=en"] {
+  border-color: var(--accent-primary) !important;
+  background: rgba(0, 210, 255, 0.15) !important;
+}
+
+html[lang="ru"] #kc-locale-dropdown ul a[href*="kc_locale=ru"]::after,
+html[lang="en"] #kc-locale-dropdown ul a[href*="kc_locale=en"]::after {
+  color: var(--accent-primary) !important;
+}
+
+#kc-locale-dropdown ul a:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
 }
 
 .form-control {
   background: rgba(255, 255, 255, 0.04) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 12px !important;
   padding: 12px 16px !important;
   color: white !important;
   font-size: 14px !important;
-  outline: none !important;
-  transition: all 0.2s !important;
 }
 
-.form-control:focus {
-  border-color: rgba(0, 210, 255, 0.4) !important;
-  background: rgba(255, 255, 255, 0.06) !important;
-  box-shadow: 0 0 0 4px rgba(0, 210, 255, 0.05) !important;
-}
-
-.btn-primary {
+.btn-primary,
+#kc-login {
   background: var(--accent-primary) !important;
   color: black !important;
-  padding: 12px 20px !important;
+  padding: 14px 20px !important;
   border-radius: 12px !important;
   font-weight: 700 !important;
-  font-size: 14px !important;
+  font-size: 15px !important;
   border: none !important;
   width: 100% !important;
-  cursor: pointer !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  box-shadow: 0 4px 15px rgba(0, 210, 255, 0.2) !important;
-  margin-top: 10px !important;
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 6px 20px rgba(0, 210, 255, 0.4) !important;
-  background: #33e1ff !important;
-}
-
-#kc-registration {
-  text-align: center !important;
-  margin-top: 20px !important;
-  color: var(--text-secondary) !important;
-  font-size: 13px !important;
-}
-
-#kc-registration a {
-  color: var(--accent-primary) !important;
-  font-weight: 600 !important;
-  text-decoration: none !important;
-}
-
-#kc-registration a:hover {
-  text-decoration: underline !important;
-}
-
-.checkbox label {
-  color: var(--text-secondary) !important;
-}
-
-input[type="checkbox"] {
-  accent-color: var(--accent-primary) !important;
+  margin-top: 15px !important;
+  box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3) !important;
 }
 
 label {
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  color: rgba(255, 255, 255, 0.4) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: rgba(255, 255, 255, 0.5) !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.05em !important;
-  margin-bottom: 6px !important;
+  letter-spacing: 1px !important;
+  margin-bottom: 8px !important;
+  display: block !important;
+  margin-top: 15px !important;
+}
+
+/* Social Login */
+#kc-social-providers {
+  margin-top: 35px !important;
+  border-top: 1px solid var(--glass-border) !important;
+  padding-top: 25px !important;
+}
+
+#kc-social-providers h4 {
+  font-size: 13px !important;
+  color: var(--text-secondary) !important;
+  margin-bottom: 20px !important;
+  text-align: center !important;
+}
+
+#kc-social-providers ul {
+  display: flex !important;
+  justify-content: center !important;
+  gap: 20px !important;
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+#social-vk,
+#social-yandex {
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  width: 54px !important;
+  height: 54px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  transition: all 0.3s !important;
+  border: none !important;
+}
+
+#social-vk::after,
+#social-yandex::after {
+  border: none;
+  content: "" !important;
+  display: block !important;
+  width: 54px !important;
+  height: 54px !important;
+  background-size: 90% !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  pointer-events: none !important;
+}
+
+#social-vk::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none'%3E%3Ccircle cx='12' cy='12' r='10' fill='%230077FF'/%3E%3Cpath d='M13.162 18.994c-6.098 0-9.57-4.172-9.714-11.104h3.048c.1 5.093 2.343 7.25 4.124 7.695v-7.695h2.867v4.39c1.752-.186 3.591-2.186 4.21-4.39h2.867c-.454 2.701-2.403 4.701-3.784 5.69 1.381.639 3.65 2.381 4.516 5.414h-3.15c-.68-2.124-2.382-3.763-4.114-3.938v3.938h-1.043z' fill='%23fff'/%3E%3C/svg%3E") !important;
+}
+
+#social-yandex::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none'%3E%3Cpath d='M2.04 12c0-5.523 4.476-10 10-10 5.522 0 10 4.477 10 10s-4.478 10-10 10c-5.524 0-10-4.477-10-10z' fill='%23FC3F1D'/%3E%3Cpath d='M13.32 7.666h-.924c-1.694 0-2.585.858-2.585 2.123 0 1.43.616 2.1 1.881 2.959l1.045.704-3.003 4.487H7.49l2.695-4.014c-1.55-1.111-2.42-2.19-2.42-4.015 0-2.288 1.595-3.85 4.62-3.85h3.003v11.868H13.32V7.666z' fill='%23fff'/%3E%3C/svg%3E") !important;
+}
+
+#social-vk span,
+#social-yandex span {
+  display: none !important;
 }

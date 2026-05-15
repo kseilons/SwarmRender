@@ -5,6 +5,9 @@
   "resetPasswordAllowed": true,
   "rememberMe": true,
   "loginTheme": "swarmrender",
+  "internationalizationEnabled": true,
+  "supportedLocales": [ "ru", "en" ],
+  "defaultLocale": "ru",
   "clients": [
     {
       "clientId": "auth-service",
