@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Nerzal/gocloak/v13"
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	prometheus "github.com/zsais/go-gin-prometheus"
 )
@@ -38,6 +39,8 @@ func (a *App) Run(ctx context.Context) error {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	router := gin.Default()
+
+	pprof.Register(router)
 	p := prometheus.NewPrometheus("auth_service")
 	p.Use(router)
 
