@@ -1,4 +1,4 @@
-# Оркестрация Рендер-Фермы в Kubernetes
+# Оркестрация Рендер-Фермы в Kubernetes (k3s + Helm)
 SHELL := bash
 
 CHART_DIR = helm/swarmrender
@@ -7,13 +7,6 @@ NAMESPACE = default
 
 MASTER_NODE ?= master-node
 WORKER_NODE ?= worker-node
-
-INFRA_DIRS = config postgres kafka minio keycloak
-APP_DIRS = auth-service job-service stitching-service worker-service api-gateway frontend
-MONITORING_DIRS = monitoring/exporters monitoring/prometheus monitoring/grafana
-DIRS = $(INFRA_DIRS) $(APP_DIRS) $(MONITORING_DIRS)
-
-PROFILE = blender
 
 # Настройка кластера k3s
 k3s-master:
@@ -63,44 +56,4 @@ chaos-test-worker:
 	kubectl delete pod $$POD; \
 	kubectl get pods -l app=worker-service -o wide -w
 
-all: $(DIRS)
-
-setup:
-	minikube delete -p $(PROFILE)
-	minikube start --driver=docker --memory=8g --cpus=8 --disk-size=40g -p $(PROFILE)
-
-addons:
-	minikube addons enable ingress -p $(PROFILE)
-
-build:
-	@echo "--- Building all images inside Minikube ---"
-	@powershell -Command "minikube -p $(PROFILE) docker-env | Invoke-Expression; \
-		docker build -t auth-service:latest ../services/auth-service; \
-		docker build -t job-service:latest ../services/job-service; \
-		docker build -t worker-service:latest ../services/worker-service; \
-		docker build -t stitching-service:latest ../services/stitching-service; \
-		docker build -t api-gateway:latest ../services/api-gateway; \
-		docker build -t frontend:latest ../frontend"
-
-infra: $(INFRA_DIRS)
-apps: $(APP_DIRS)
-monitoring: $(MONITORING_DIRS)
-
-$(DIRS):
-	@echo "--- Deploying $@ ---"
-	@if [ -d $@/makefile ] || [ -f $@/Makefile ]; then \
-		"$(MAKE)" -C $@; \
-	else \
-		kubectl apply -f $@/; \
-	fi
-
-clean:
-	@for dir in $(DIRS); do \
-		if [ -d $$dir/makefile ] || [ -f $$dir/Makefile ]; then \
-			"$(MAKE)" -C $$dir clean; \
-		else \
-			kubectl delete -f $$dir/ --ignore-not-found; \
-		fi \
-	done
-
-.PHONY: all k3s-master k3s-label-nodes build-images import-k3s helm-lint helm-template helm-install helm-uninstall verify-placement chaos-test-worker setup addons build infra apps monitoring clean $(DIRS)
+.PHONY: k3s-master k3s-label-nodes build-images import-k3s helm-lint helm-template helm-install helm-uninstall verify-placement chaos-test-worker
