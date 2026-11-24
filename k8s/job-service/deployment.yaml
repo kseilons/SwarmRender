@@ -14,6 +14,10 @@ spec:
       labels:
         app: job-service
     spec:
+      nodeSelector:
+        node-role: master
+      securityContext:
+        runAsNonRoot: true
       containers:
         - name: job-service
           image: job-service:latest

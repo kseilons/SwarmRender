@@ -14,6 +14,10 @@ spec:
       labels:
         app: auth-service
     spec:
+      nodeSelector:
+        node-role: master
+      securityContext:
+        runAsNonRoot: true
       containers:
         - name: auth-service
           image: auth-service:latest

@@ -1,0 +1,93 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  labels:
+    app.kubernetes.io/part-of: swarmrender
+data:
+  job-service.yaml: |
+    env: "prod"
+    http:
+      address: "0.0.0.0:{{ .Values.jobService.port }}"
+      max_workers: {{ .Values.jobService.maxWorkers }}
+    database:
+      host: "postgres"
+      port: {{ .Values.postgres.port }}
+      user: {{ .Values.secrets.postgres.user | quote }}
+      password: {{ .Values.secrets.postgres.password | quote }}
+      name: {{ .Values.secrets.postgres.db | quote }}
+      sslmode: "disable"
+    vault:
+      enabled: {{ .Values.vault.enabled }}
+      address: "http://vault:{{ .Values.vault.port }}"
+      secret_path: {{ .Values.vault.secretPath | quote }}
+    kafka:
+      brokers: ["kafka:{{ .Values.kafka.port }}"]
+      render_topic: {{ .Values.kafka.topics.render | quote }}
+      metadata_topic: {{ .Values.kafka.topics.metadata | quote }}
+      stitching_topic: {{ .Values.kafka.topics.stitching | quote }}
+      result_topic: {{ .Values.kafka.topics.result | quote }}
+      result_group_id: "job-service-results"
+    minio:
+      endpoint: "minio:{{ .Values.minio.apiPort }}"
+      access_key: {{ .Values.secrets.minio.accessKey | quote }}
+      secret_key: {{ .Values.secrets.minio.secretKey | quote }}
+      use_ssl: false
+      bucket: {{ .Values.secrets.minio.bucket | quote }}
+      presigned_expiry: 3600
+
+  auth-service.yaml: |
+    env: "prod"
+    http:
+      port: {{ .Values.authService.port }}
+    keycloak:
+      base_url: "http://keycloak:{{ .Values.keycloak.port }}"
+      realm: {{ .Values.secrets.keycloak.realm | quote }}
+      client_id: "auth-service"
+      client_secret: {{ .Values.secrets.keycloak.clientSecret | quote }}
+
+  worker-service.yaml: |
+    env: "prod"
+    blender:
+      path: {{ .Values.workerService.blenderPath | quote }}
+      allowed_devices: {{ .Values.workerService.allowedDevices | toJson }}
+      threads: {{ .Values.workerService.threads }}
+    kafka:
+      brokers: ["kafka:{{ .Values.kafka.port }}"]
+      render_topic: {{ .Values.kafka.topics.render | quote }}
+      metadata_topic: {{ .Values.kafka.topics.metadata | quote }}
+      result_topic: {{ .Values.kafka.topics.result | quote }}
+      group_id: "worker-service"
+    minio:
+      endpoint: "minio:{{ .Values.minio.apiPort }}"
+      access_key: {{ .Values.secrets.minio.accessKey | quote }}
+      secret_key: {{ .Values.secrets.minio.secretKey | quote }}
+      use_ssl: false
+      bucket: {{ .Values.secrets.minio.bucket | quote }}
+
+  stitching-service.yaml: |
+    env: "prod"
+    http:
+      address: "0.0.0.0:{{ .Values.stitchingService.port }}"
+    kafka:
+      brokers: ["kafka:{{ .Values.kafka.port }}"]
+      consumer_group: "stitching-group"
+      input_topic: {{ .Values.kafka.topics.stitching | quote }}
+      result_topic: {{ .Values.kafka.topics.result | quote }}
+    minio:
+      endpoint: "minio:{{ .Values.minio.apiPort }}"
+      access_key: {{ .Values.secrets.minio.accessKey | quote }}
+      secret_key: {{ .Values.secrets.minio.secretKey | quote }}
+      bucket: {{ .Values.secrets.minio.bucket | quote }}
+      use_ssl: false
+      output_bucket: {{ .Values.secrets.minio.bucket | quote }}
+
+  api-gateway.yaml: |
+    env: "prod"
+    http:
+      port: {{ .Values.apiGateway.port }}
+    services:
+      auth_service: "http://auth-service:{{ .Values.authService.port }}"
+      job_service: "http://job-service:{{ .Values.jobService.port }}"
+    keycloak:
+      jwks_url: "http://keycloak:{{ .Values.keycloak.port }}/realms/{{ .Values.secrets.keycloak.realm }}/protocol/openid-connect/certs"

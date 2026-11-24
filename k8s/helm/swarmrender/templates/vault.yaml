@@ -1,0 +1,135 @@
+{{- if .Values.vault.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-secrets-sync
+  labels:
+    app: vault
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: vault-secrets-sync-role
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: vault-secrets-sync-binding
+subjects:
+  - kind: ServiceAccount
+    name: vault-secrets-sync
+roleRef:
+  kind: Role
+  name: vault-secrets-sync-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vault
+  labels:
+    app: vault
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vault
+  template:
+    metadata:
+      labels:
+        app: vault
+    spec:
+      nodeSelector:
+        {{- toYaml .Values.global.masterNodeSelector | nindent 8 }}
+      containers:
+        - name: vault
+          image: {{ .Values.vault.image }}
+          ports:
+            - containerPort: {{ .Values.vault.port }}
+              name: http
+          env:
+            - name: VAULT_DEV_ROOT_TOKEN_ID
+              value: {{ .Values.vault.rootToken | quote }}
+            - name: VAULT_DEV_LISTEN_ADDRESS
+              value: "0.0.0.0:{{ .Values.vault.port }}"
+            - name: VAULT_ADDR
+              value: "http://127.0.0.1:{{ .Values.vault.port }}"
+          securityContext:
+            capabilities:
+              add: ["IPC_LOCK"]
+          readinessProbe:
+            httpGet:
+              path: /v1/sys/health
+              port: {{ .Values.vault.port }}
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.vault.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vault
+spec:
+  selector:
+    app: vault
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ .Values.vault.port }}
+      targetPort: {{ .Values.vault.port }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vault-seed-secrets
+  labels:
+    app: vault-seed
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      serviceAccountName: vault-secrets-sync
+      nodeSelector:
+        {{- toYaml .Values.global.masterNodeSelector | nindent 8 }}
+      restartPolicy: OnFailure
+      containers:
+        - name: vault-seeder
+          image: {{ .Values.vault.image }}
+          env:
+            - name: VAULT_ADDR
+              value: "http://vault:{{ .Values.vault.port }}"
+            - name: VAULT_TOKEN
+              value: {{ .Values.vault.rootToken | quote }}
+          command:
+            - sh
+            - -c
+            - |
+              until vault status; do
+                echo "Waiting for HashiCorp Vault to start..."
+                sleep 2
+              done
+              echo "Storing application secrets in HashiCorp Vault KV-v2 engine..."
+              vault kv put {{ .Values.vault.secretPath }}/postgres \
+                user={{ .Values.secrets.postgres.user | quote }} \
+                password={{ .Values.secrets.postgres.password | quote }} \
+                db={{ .Values.secrets.postgres.db | quote }}
+
+              vault kv put {{ .Values.vault.secretPath }}/minio \
+                access_key={{ .Values.secrets.minio.accessKey | quote }} \
+                secret_key={{ .Values.secrets.minio.secretKey | quote }} \
+                bucket={{ .Values.secrets.minio.bucket | quote }}
+
+              vault kv put {{ .Values.vault.secretPath }}/keycloak \
+                admin_user={{ .Values.secrets.keycloak.adminUser | quote }} \
+                admin_password={{ .Values.secrets.keycloak.adminPassword | quote }} \
+                client_secret={{ .Values.secrets.keycloak.clientSecret | quote }} \
+                realm={{ .Values.secrets.keycloak.realm | quote }}
+
+              echo "Vault KV secrets successfully initialized:"
+              vault kv get {{ .Values.vault.secretPath }}/postgres
+{{- end }}

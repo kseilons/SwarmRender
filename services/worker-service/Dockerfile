@@ -7,7 +7,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 go build -o worker-service ./cmd/app/main.go
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o worker-service ./cmd/app/main.go
 
 FROM nvidia/cuda:13.2.1-cudnn-devel-ubuntu24.04
 
@@ -50,6 +50,11 @@ WORKDIR /app
 
 COPY --from=builder /app/worker-service .
 COPY config/ config/
+
+RUN groupadd -r appgroup && useradd -r -g appgroup -m -d /home/appuser appuser && \
+    chown -R appuser:appgroup /app /opt/blender
+
+USER appuser
 
 EXPOSE 8081
 
