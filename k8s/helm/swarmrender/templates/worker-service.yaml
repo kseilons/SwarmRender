@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-service
+  labels:
+    app: worker-service
+spec:
+  replicas: {{ .Values.workerService.replicas }}
+  selector:
+    matchLabels:
+      app: worker-service
+  template:
+    metadata:
+      labels:
+        app: worker-service
+    spec:
+      {{- if .Values.workerService.podAntiAffinity.enabled }}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - worker-service
+              topologyKey: {{ .Values.workerService.podAntiAffinity.topologyKey | quote }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: worker-service
+          image: {{ .Values.workerService.image }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          env:
+            - name: CONFIG_PATH
+              value: "/config/config.yaml"
+          resources:
+            {{- toYaml .Values.workerService.resources | nindent 12 }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+              readOnly: true
+            - name: shm
+              mountPath: /dev/shm
+      volumes:
+        - name: config-volume
+          configMap:
+            name: app-config
+            items:
+              - key: worker-service.yaml
+                path: config.yaml
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: {{ .Values.workerService.shmSize }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: worker-service
+spec:
+  clusterIP: None
+  selector:
+    app: worker-service
+  ports:
+    - name: metrics
+      protocol: TCP
+      port: 8081
+      targetPort: 8081

@@ -7,16 +7,21 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o stitching-service ./cmd/stitching/main.go
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o stitching-service ./cmd/stitching/main.go
 
 FROM alpine:latest
 
-# Install FFmpeg
-RUN apk add --no-cache ffmpeg
+# Install FFmpeg and create non-root user
+RUN apk add --no-cache ffmpeg && \
+    addgroup -S appgroup && adduser -S appuser -G appgroup
 
 WORKDIR /app
 
 COPY --from=builder /app/stitching-service .
 COPY config/ config/
+
+RUN chown -R appuser:appgroup /app
+
+USER appuser
 
 CMD ["./stitching-service"]

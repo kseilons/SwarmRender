@@ -7,14 +7,20 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 go build -o api-gateway ./cmd/main.go
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o api-gateway ./cmd/main.go
 
 FROM alpine:latest
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 WORKDIR /app
 
 COPY --from=builder /app/api-gateway .
 COPY config/ config/
+
+RUN chown -R appuser:appgroup /app
+
+USER appuser
 
 EXPOSE 8000
 

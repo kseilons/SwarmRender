@@ -381,6 +381,9 @@ func (uc *JobUseCase) HandleTaskProgress(ctx context.Context, taskID string, cur
 	if err == nil {
 		totalCompleted := 0
 		for _, t := range tasks {
+			if t.Type == domain.TypeStitching {
+				continue
+			}
 			if t.Status == domain.StatusCompleted {
 				totalCompleted += (t.FrameEnd - t.FrameStart + 1)
 			} else if t.CurrentFrame >= t.FrameStart {

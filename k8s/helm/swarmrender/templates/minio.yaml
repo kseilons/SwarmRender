@@ -1,0 +1,83 @@
+{{- if .Values.minio.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.minio.storage }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio
+  labels:
+    app: minio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      nodeSelector:
+        {{- toYaml .Values.global.masterNodeSelector | nindent 8 }}
+      containers:
+        - name: minio
+          image: {{ .Values.minio.image }}
+          args: ["server", "/data", "--console-address", ":{{ .Values.minio.consolePort }}"]
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: swarmrender-secrets
+                  key: MINIO_ROOT_USER
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: swarmrender-secrets
+                  key: MINIO_ROOT_PASSWORD
+          ports:
+            - containerPort: {{ .Values.minio.apiPort }}
+              name: api
+            - containerPort: {{ .Values.minio.consolePort }}
+              name: console
+          resources:
+            {{- toYaml .Values.minio.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /minio/health/live
+              port: {{ .Values.minio.apiPort }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          volumeMounts:
+            - name: minio-data
+              mountPath: /data
+      volumes:
+        - name: minio-data
+          persistentVolumeClaim:
+            claimName: minio-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+spec:
+  selector:
+    app: minio
+  ports:
+    - name: api
+      protocol: TCP
+      port: {{ .Values.minio.apiPort }}
+      targetPort: {{ .Values.minio.apiPort }}
+    - name: console
+      protocol: TCP
+      port: {{ .Values.minio.consolePort }}
+      targetPort: {{ .Values.minio.consolePort }}
+{{- end }}

@@ -31,7 +31,7 @@ type Infrastructure struct {
 type Repositories struct {
 	Job   *postgres.JobRepository
 	Task  *postgres.TaskRepository
-	Minio *minio.MinioRepository
+	Minio usecase.MinioRepository
 }
 
 type UseCases struct {
@@ -95,7 +95,7 @@ func (a *App) initInfrastructure(ctx context.Context) error {
 }
 
 func (a *App) initRepositories() error {
-	minioRepo, err := minio.NewMinioRepository(a.cfg.Minio)
+	minioRepo, err := minio.NewRepository(a.cfg.Minio)
 	if err != nil {
 		return fmt.Errorf("failed to connect to minio: %w", err)
 	}
@@ -103,7 +103,7 @@ func (a *App) initRepositories() error {
 	a.repos = &Repositories{
 		Job:   postgres.NewJobRepository(a.infra.Pool),
 		Task:  postgres.NewTaskRepository(a.infra.Pool),
-		Minio: minioRepo,
+		Minio: minio.NewCachedRepository(minioRepo, minioRepo.Expiry()),
 	}
 	return nil
 }

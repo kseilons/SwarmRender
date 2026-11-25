@@ -7,15 +7,21 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o job-service ./cmd/main.go
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o job-service ./cmd/main.go
 
 FROM alpine:latest
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 WORKDIR /app
 
 COPY --from=builder /app/job-service .
 COPY config/ config/
 COPY migrations/ migrations/
+
+RUN chown -R appuser:appgroup /app
+
+USER appuser
 
 EXPOSE 8081
 
