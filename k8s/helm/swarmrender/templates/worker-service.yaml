@@ -6,6 +6,8 @@ metadata:
     app: worker-service
 spec:
   replicas: {{ .Values.workerService.replicas }}
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: worker-service
