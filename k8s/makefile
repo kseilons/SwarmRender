@@ -33,7 +33,7 @@ build-images:
 	docker build -t $(REGISTRY)/frontend:latest ../frontend
 
 push-images:
-	docker pull minio/minio:latest && docker tag minio/minio:latest $(REGISTRY)/minio:latest
+	docker pull ghcr.io/coollabsio/minio:latest && docker tag ghcr.io/coollabsio/minio:latest $(REGISTRY)/minio:latest
 	@for img in auth-service job-service worker-service stitching-service api-gateway frontend minio; do \
 		echo "Pushing $(REGISTRY)/$$img:latest..."; \
 		docker push $(REGISTRY)/$$img:latest; \

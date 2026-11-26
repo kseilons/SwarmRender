@@ -36,7 +36,7 @@ secrets:
 
 postgres:
   enabled: true
-  image: mirror.gcr.io/postgres:15-alpine
+  image: mirror.gcr.io/postgres:17
   port: 5432
   storage: 2Gi
   resources:
