@@ -36,7 +36,7 @@ secrets:
 
 postgres:
   enabled: true
-  image: postgres:15-alpine
+  image: mirror.gcr.io/postgres:15-alpine
   port: 5432
   storage: 2Gi
   resources:
@@ -49,7 +49,7 @@ postgres:
 
 minio:
   enabled: true
-  image: quay.io/minio/minio:latest
+  image: mirror.gcr.io/minio/minio:latest
   apiPort: 9000
   consolePort: 9001
   storage: 10Gi
@@ -63,7 +63,7 @@ minio:
 
 kafka:
   enabled: true
-  image: apache/kafka:latest
+  image: mirror.gcr.io/apache/kafka:latest
   port: 9092
   partitions: 4
   storage: 2Gi
@@ -184,7 +184,7 @@ monitoring:
         cpu: 500m
         memory: 512Mi
   grafana:
-    image: grafana/grafana:latest
+    image: mirror.gcr.io/grafana/grafana:latest
     port: 3000
     adminUser: "admin"
     adminPassword: "admin"
