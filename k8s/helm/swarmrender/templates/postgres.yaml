@@ -30,6 +30,13 @@ spec:
     spec:
       nodeSelector:
         {{- toYaml .Values.global.masterNodeSelector | nindent 8 }}
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        runAsNonRoot: true
+        appArmorProfile:
+          type: Unconfined
       containers:
         - name: postgres
           image: {{ .Values.postgres.image }}
