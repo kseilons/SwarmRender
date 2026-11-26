@@ -113,7 +113,8 @@ spec:
                 echo "Waiting for HashiCorp Vault to start..."
                 sleep 2
               done
-              echo "Storing application secrets in HashiCorp Vault KV-v2 engine..."
+
+              echo "1. Writing secrets into HashiCorp Vault KV-v2 engine..."
               vault kv put {{ .Values.vault.secretPath }}/postgres \
                 user={{ .Values.secrets.postgres.user | quote }} \
                 password={{ .Values.secrets.postgres.password | quote }} \
@@ -130,6 +131,44 @@ spec:
                 client_secret={{ .Values.secrets.keycloak.clientSecret | quote }} \
                 realm={{ .Values.secrets.keycloak.realm | quote }}
 
-              echo "Vault KV secrets successfully initialized:"
-              vault kv get {{ .Values.vault.secretPath }}/postgres
+              echo "2. Fetching secrets from Vault and syncing to Kubernetes Secret (swarmrender-secrets)..."
+              PG_USER=$(vault kv get -field=user {{ .Values.vault.secretPath }}/postgres)
+              PG_PASS=$(vault kv get -field=password {{ .Values.vault.secretPath }}/postgres)
+              PG_DB=$(vault kv get -field=db {{ .Values.vault.secretPath }}/postgres)
+              MINIO_USER=$(vault kv get -field=access_key {{ .Values.vault.secretPath }}/minio)
+              MINIO_PASS=$(vault kv get -field=secret_key {{ .Values.vault.secretPath }}/minio)
+              KC_USER=$(vault kv get -field=admin_user {{ .Values.vault.secretPath }}/keycloak)
+              KC_PASS=$(vault kv get -field=admin_password {{ .Values.vault.secretPath }}/keycloak)
+              KC_SECRET=$(vault kv get -field=client_secret {{ .Values.vault.secretPath }}/keycloak)
+
+              KUBE_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+              KUBE_NS=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+              KUBE_API="https://kubernetes.default.svc/api/v1/namespaces/${KUBE_NS}/secrets"
+
+              PAYLOAD=$(cat <<EOF
+              {
+                "apiVersion": "v1",
+                "kind": "Secret",
+                "metadata": { "name": "swarmrender-secrets" },
+                "type": "Opaque",
+                "stringData": {
+                  "POSTGRES_USER": "${PG_USER}",
+                  "POSTGRES_PASSWORD": "${PG_PASS}",
+                  "POSTGRES_DB": "${PG_DB}",
+                  "MINIO_ROOT_USER": "${MINIO_USER}",
+                  "MINIO_ROOT_PASSWORD": "${MINIO_PASS}",
+                  "KEYCLOAK_ADMIN": "${KC_USER}",
+                  "KEYCLOAK_ADMIN_PASSWORD": "${KC_PASS}",
+                  "KEYCLOAK_CLIENT_SECRET": "${KC_SECRET}"
+                }
+              }
+              EOF
+              )
+
+              wget -q --no-check-certificate --header="Authorization: Bearer ${KUBE_TOKEN}" \
+                --header="Content-Type: application/json" \
+                --post-data="${PAYLOAD}" \
+                -O /dev/null "${KUBE_API}" || true
+
+              echo "Vault KV secrets successfully synced to Kubernetes."
 {{- end }}

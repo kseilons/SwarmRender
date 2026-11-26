@@ -7,6 +7,8 @@ NAMESPACE = default
 
 MASTER_NODE ?= master-node
 WORKER_NODE ?= worker-node
+MASTER_IP ?= 192.168.0.109
+REGISTRY ?= $(MASTER_IP):5000
 
 # Настройка кластера k3s
 k3s-master:
@@ -18,19 +20,22 @@ k3s-label-nodes:
 	kubectl label nodes $(WORKER_NODE) node-role=worker --overwrite
 	kubectl get nodes --show-labels
 
-# Сборка и импорт Docker-образов
-build-images:
-	docker build -t auth-service:latest ../services/auth-service
-	docker build -t job-service:latest ../services/job-service
-	docker build -t worker-service:latest ../services/worker-service
-	docker build -t stitching-service:latest ../services/stitching-service
-	docker build -t api-gateway:latest ../services/api-gateway
-	docker build -t frontend:latest ../frontend
+# Запуск локального Docker Registry и публикация образов
+registry:
+	docker run -d -p 5000:5000 --restart=always --name registry registry:2 || true
 
-import-k3s:
+build-images:
+	docker build -t $(REGISTRY)/auth-service:latest ../services/auth-service
+	docker build -t $(REGISTRY)/job-service:latest ../services/job-service
+	docker build -t $(REGISTRY)/worker-service:latest ../services/worker-service
+	docker build -t $(REGISTRY)/stitching-service:latest ../services/stitching-service
+	docker build -t $(REGISTRY)/api-gateway:latest ../services/api-gateway
+	docker build -t $(REGISTRY)/frontend:latest ../frontend
+
+push-images:
 	@for img in auth-service job-service worker-service stitching-service api-gateway frontend; do \
-		echo "Importing $$img:latest into k3s containerd..."; \
-		docker save $$img:latest | sudo k3s ctr images import -; \
+		echo "Pushing $(REGISTRY)/$$img:latest..."; \
+		docker push $(REGISTRY)/$$img:latest; \
 	done
 
 # Управление Helm-чартом
@@ -41,7 +46,7 @@ helm-template:
 	helm template $(RELEASE_NAME) $(CHART_DIR)
 
 helm-install:
-	helm upgrade --install $(RELEASE_NAME) $(CHART_DIR) --namespace $(NAMESPACE)
+	helm upgrade --install $(RELEASE_NAME) $(CHART_DIR) --namespace $(NAMESPACE) --set global.registry=$(REGISTRY)
 
 helm-uninstall:
 	helm uninstall $(RELEASE_NAME) --namespace $(NAMESPACE)
@@ -56,4 +61,4 @@ chaos-test-worker:
 	kubectl delete pod $$POD; \
 	kubectl get pods -l app=worker-service -o wide -w
 
-.PHONY: k3s-master k3s-label-nodes build-images import-k3s helm-lint helm-template helm-install helm-uninstall verify-placement chaos-test-worker
+.PHONY: k3s-master k3s-label-nodes registry build-images push-images helm-lint helm-template helm-install helm-uninstall verify-placement chaos-test-worker

@@ -21,7 +21,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: api-gateway
-          image: {{ .Values.apiGateway.image }}
+          image: "{{ .Values.global.registry }}/{{ .Values.apiGateway.image }}"
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           env:
             - name: CONFIG_PATH
@@ -78,7 +78,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: auth-service
-          image: {{ .Values.authService.image }}
+          image: "{{ .Values.global.registry }}/{{ .Values.authService.image }}"
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           env:
             - name: CONFIG_PATH
@@ -135,7 +135,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: job-service
-          image: {{ .Values.jobService.image }}
+          image: "{{ .Values.global.registry }}/{{ .Values.jobService.image }}"
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           env:
             - name: CONFIG_PATH
@@ -192,7 +192,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: stitching-service
-          image: {{ .Values.stitchingService.image }}
+          image: "{{ .Values.global.registry }}/{{ .Values.stitchingService.image }}"
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           env:
             - name: CONFIG_PATH
@@ -247,7 +247,7 @@ spec:
         {{- toYaml .Values.global.masterNodeSelector | nindent 8 }}
       containers:
         - name: frontend
-          image: {{ .Values.frontend.image }}
+          image: "{{ .Values.global.registry }}/{{ .Values.frontend.image }}"
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           ports:
             - containerPort: {{ .Values.frontend.port }}

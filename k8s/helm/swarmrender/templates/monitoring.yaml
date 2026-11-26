@@ -186,6 +186,11 @@ data:
       - job_name: 'worker-service'
         static_configs:
           - targets: ['worker-service:8081']
+        dns_sd_configs:
+          - names:
+              - 'worker-service'
+            type: 'A'
+            port: 8081
 
       - job_name: 'auth-service'
         static_configs:

@@ -30,7 +30,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: worker-service
-          image: {{ .Values.workerService.image }}
+          image: "{{ .Values.global.registry }}/{{ .Values.workerService.image }}"
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           env:
             - name: CONFIG_PATH

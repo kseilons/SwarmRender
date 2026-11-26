@@ -2,7 +2,7 @@
 set -e
 
 ACTION=${1:-help}
-MASTER_IP=${2:-192.168.0.100}
+MASTER_IP=${2:-192.168.0.109}
 TOKEN=${3:-""}
 
 case "$ACTION" in
