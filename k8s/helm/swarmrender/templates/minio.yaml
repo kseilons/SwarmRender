@@ -32,7 +32,7 @@ spec:
         {{- toYaml .Values.global.masterNodeSelector | nindent 8 }}
       containers:
         - name: minio
-          image: {{ .Values.minio.image }}
+          image: "{{ .Values.global.registry }}/{{ .Values.minio.image }}"
           args: ["server", "/data", "--console-address", ":{{ .Values.minio.consolePort }}"]
           env:
             - name: MINIO_ROOT_USER
