@@ -28,6 +28,7 @@ spec:
       {{- end }}
       securityContext:
         runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: worker-service
           image: "{{ .Values.global.registry }}/{{ .Values.workerService.image }}"

@@ -49,7 +49,7 @@ postgres:
 
 minio:
   enabled: true
-  image: minio/minio:latest
+  image: quay.io/minio/minio:latest
   apiPort: 9000
   consolePort: 9001
   storage: 10Gi

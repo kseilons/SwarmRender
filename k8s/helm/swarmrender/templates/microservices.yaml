@@ -19,6 +19,7 @@ spec:
         {{- toYaml .Values.global.masterNodeSelector | nindent 8 }}
       securityContext:
         runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: api-gateway
           image: "{{ .Values.global.registry }}/{{ .Values.apiGateway.image }}"
@@ -76,6 +77,7 @@ spec:
         {{- toYaml .Values.global.masterNodeSelector | nindent 8 }}
       securityContext:
         runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: auth-service
           image: "{{ .Values.global.registry }}/{{ .Values.authService.image }}"
@@ -133,6 +135,7 @@ spec:
         {{- toYaml .Values.global.masterNodeSelector | nindent 8 }}
       securityContext:
         runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: job-service
           image: "{{ .Values.global.registry }}/{{ .Values.jobService.image }}"
@@ -190,6 +193,7 @@ spec:
         {{- toYaml .Values.global.masterNodeSelector | nindent 8 }}
       securityContext:
         runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: stitching-service
           image: "{{ .Values.global.registry }}/{{ .Values.stitchingService.image }}"
