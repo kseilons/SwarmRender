@@ -36,7 +36,7 @@ secrets:
 
 postgres:
   enabled: true
-  image: mirror.gcr.io/postgres:17
+  image: postgres:17
   port: 5432
   storage: 2Gi
   resources:
@@ -63,7 +63,7 @@ minio:
 
 kafka:
   enabled: true
-  image: mirror.gcr.io/apache/kafka:latest
+  image: apache/kafka:latest
   port: 9092
   partitions: 4
   storage: 2Gi
@@ -184,7 +184,7 @@ monitoring:
         cpu: 500m
         memory: 512Mi
   grafana:
-    image: mirror.gcr.io/grafana/grafana:latest
+    image: grafana/grafana:latest
     port: 3000
     adminUser: "admin"
     adminPassword: "admin"
