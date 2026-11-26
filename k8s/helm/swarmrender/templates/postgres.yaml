@@ -30,17 +30,6 @@ spec:
     spec:
       nodeSelector:
         {{- toYaml .Values.global.masterNodeSelector | nindent 8 }}
-      initContainers:
-        - name: fix-permissions
-          image: busybox:latest
-          command: ["sh", "-c", "mkdir -p /var/lib/postgresql/data/pgdata && chown -R 999:999 /var/lib/postgresql/data"]
-          volumeMounts:
-            - name: postgres-data
-              mountPath: /var/lib/postgresql/data
-      securityContext:
-        runAsUser: 999
-        runAsGroup: 999
-        fsGroup: 999
       containers:
         - name: postgres
           image: {{ .Values.postgres.image }}

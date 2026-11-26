@@ -9,6 +9,8 @@ case "$ACTION" in
   init-master)
     echo "Установка k3s Server (Master) с Flannel CNI..."
     curl -sfL https://get.k3s.io | sh -s - server --flannel-backend=vxlan --write-kubeconfig-mode 644
+    sudo sed -i 's/LimitNOFILE=infinity/LimitNOFILE=65536/g' /etc/systemd/system/k3s.service
+    sudo systemctl daemon-reload && sudo systemctl restart k3s
     MASTER_HOSTNAME=$(hostname)
     kubectl label node "$MASTER_HOSTNAME" node-role=master --overwrite
     echo "Master-узел настроен. Токен для подключения рабочей ноды:"
