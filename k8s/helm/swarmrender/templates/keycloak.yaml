@@ -1,4 +1,39 @@
 {{- if .Values.keycloak.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm-config
+data:
+  realm-render-farm.json: |
+    {
+      "realm": {{ .Values.secrets.keycloak.realm | quote }},
+      "enabled": true,
+      "registrationAllowed": true,
+      "resetPasswordAllowed": true,
+      "rememberMe": true,
+      "clients": [
+        {
+          "clientId": "auth-service",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": false,
+          "secret": {{ .Values.secrets.keycloak.clientSecret | quote }},
+          "serviceAccountsEnabled": true,
+          "directAccessGrantsEnabled": true,
+          "redirectUris": ["*"]
+        },
+        {
+          "clientId": "render-farm-frontend",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": true,
+          "redirectUris": ["*"],
+          "webOrigins": ["*"],
+          "attributes": { "pkce.code.challenge.method": "S256" }
+        }
+      ]
+    }
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,6 +42,8 @@ metadata:
     app: keycloak
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: keycloak
@@ -20,7 +57,7 @@ spec:
       containers:
         - name: keycloak
           image: {{ .Values.keycloak.image }}
-          args: ["start-dev"]
+          args: ["start-dev", "--import-realm"]
           env:
             - name: KC_DB
               value: "postgres"
@@ -64,6 +101,14 @@ spec:
             - containerPort: {{ .Values.keycloak.port }}
           resources:
             {{- toYaml .Values.keycloak.resources | nindent 12 }}
+          volumeMounts:
+            - name: realm-config
+              mountPath: /opt/keycloak/data/import
+              readOnly: true
+      volumes:
+        - name: realm-config
+          configMap:
+            name: keycloak-realm-config
 ---
 apiVersion: v1
 kind: Service

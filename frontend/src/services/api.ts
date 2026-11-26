@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { getAccessToken } from './auth';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081';
+const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || `http://${host}:8000`;
 
 export interface RenderOptions {
   engine: string;

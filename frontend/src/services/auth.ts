@@ -1,6 +1,7 @@
 import { UserManager, WebStorageStateStore } from "oidc-client-ts";
 
-const authority = import.meta.env.VITE_AUTH_AUTHORITY || "http://localhost:8083/realms/render-farm";
+const host = typeof window !== "undefined" ? window.location.hostname : "localhost";
+const authority = import.meta.env.VITE_AUTH_AUTHORITY || `http://${host}:8083/realms/render-farm`;
 const clientId = import.meta.env.VITE_AUTH_CLIENT_ID || "render-farm-frontend";
 
 export const userManager = new UserManager({

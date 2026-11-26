@@ -14,7 +14,7 @@ type MessageHandler = (msg: WSMessage) => void;
 
 class WebSocketService {
   private socket: WebSocket | null = null;
-  private url: string = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws';
+  private url: string = import.meta.env.VITE_WS_URL || `ws://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:8000/ws`;
   private handlers: Set<MessageHandler> = new Set();
   private reconnectTimeout: number = 5000;
 
