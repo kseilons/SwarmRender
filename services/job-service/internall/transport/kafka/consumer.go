@@ -28,9 +28,11 @@ type Consumer struct {
 func NewConsumer(brokers []string, topic, groupID string, useCase JobUseCase, logger *slog.Logger) *Consumer {
 	return &Consumer{
 		reader: kafka.NewReader(kafka.ReaderConfig{
-			Brokers: brokers,
-			Topic:   topic,
-			GroupID: groupID,
+			Brokers:               brokers,
+			Topic:                 topic,
+			GroupID:               groupID,
+			StartOffset:           kafka.FirstOffset,
+			WatchPartitionChanges: true,
 		}),
 		useCase: useCase,
 		logger:  logger,

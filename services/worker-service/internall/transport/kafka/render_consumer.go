@@ -51,13 +51,14 @@ func NewConsumer(cfg config.KafkaConfig, renderUC RenderUseCase, metadataUC Meta
 
 	return &Consumer{
 		reader: kafka.NewReader(kafka.ReaderConfig{
-			Brokers:     cfg.Brokers,
-			GroupTopics: topics,
-			GroupID:     cfg.GroupID,
-			MinBytes:    1,
-			MaxBytes:    10e6, // 10MB
-			MaxWait:     1 * time.Second,
-			StartOffset: kafka.FirstOffset,
+			Brokers:               cfg.Brokers,
+			GroupTopics:           topics,
+			GroupID:               cfg.GroupID,
+			MinBytes:              1,
+			MaxBytes:              10e6, // 10MB
+			MaxWait:               1 * time.Second,
+			StartOffset:           kafka.FirstOffset,
+			WatchPartitionChanges: true,
 		}),
 		renderUC:   renderUC,
 		metadataUC: metadataUC,

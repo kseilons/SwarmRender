@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"path/filepath"
+	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -24,10 +25,18 @@ func MustRun(storagePath, migrationsPath string, log *slog.Logger) {
 	// На Windows пути могут содержать обратные слэши, их нужно заменить для URL
 	absPath = filepath.ToSlash(absPath)
 
-	m, err := migrate.New(
-		"file://"+absPath,
-		storagePath,
-	)
+	var m *migrate.Migrate
+	for attempt := 1; attempt <= 30; attempt++ {
+		m, err = migrate.New(
+			"file://"+absPath,
+			storagePath,
+		)
+		if err == nil {
+			break
+		}
+		log.Warn("waiting for postgres database to become ready...", slog.Int("attempt", attempt), slog.Any("error", err))
+		time.Sleep(2 * time.Second)
+	}
 	if err != nil {
 		panic(fmt.Sprintf("failed to initialize migrator: %v", err))
 	}
